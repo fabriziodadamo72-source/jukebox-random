@@ -24,14 +24,11 @@
 
   <script>
     // ========= CONFIG =========
-    const TOTAL = 123;    // <-- METTI QUI IL NUMERO TOTALE DEI TUOI MP3
-    const FOLDER = "mp3"; // cartella dove hai caricato gli mp3 nel repo
+    const TOTAL = 123;        // NUMERO TOTALE DEI FILE MP3
+    const FOLDER = "mp3";    // CARTELLA MP3 NEL REPO
+    const SUFFIX = "_Chapter 0.mp3"; // SUFFISSO DEL NOME FILE
 
-    // Se i file si chiamano esattamente come questo pattern:
-    // 001_Chapter 0.mp3, 002_Chapter 0.mp3, ... 123_Chapter 0.mp3
-    const SUFFIX = "_Chapter 0.mp3";  // <-- se cambia, dimmelo
-
-    // ========= LOGIC =========
+    // ========= ELEMENTI =========
     const player = document.getElementById("player");
     const info = document.getElementById("info");
 
@@ -39,36 +36,33 @@
       return String(n).padStart(3, "0");
     }
 
-    function pickRandom() {
-      const n = Math.floor(Math.random() * TOTAL) + 1; // 1..TOTAL
-      const filename = `${pad3(n)}${SUFFIX}`;           // es. 007_Chapter 0.mp3
-      const url = `${FOLDER}/${encodeURIComponent(filename)}`;
-      return { n, filename, url };
-    }
-
     function loadRandom() {
-      const { n, filename, url } = pickRandom();
+      const n = Math.floor(Math.random() * TOTAL) + 1; // 1..123
+      const filename = `${pad3(n)}${SUFFIX}`;
+      const url = `${FOLDER}/${encodeURIComponent(filename)}`;
+
       player.src = url;
       player.load();
-      
+
+      // 👇 FORMATO RICHIESTO
+      info.textContent = `Traccia casuale: ${filename} (${n}/${TOTAL})`;
     }
 
-    // Carica una traccia casuale appena apri la pagina
+    // CARICA UNA TRACCIA CASUALE ALL'APERTURA
     loadRandom();
 
     document.getElementById("btn").addEventListener("click", async () => {
       try {
-        await player.play(); // su iPhone serve click: questo è perfetto
-      } catch (e) {
-        alert("Se non parte, premi Play nel player audio (alcuni telefoni bloccano l'avvio automatico).");
-      }
+        await player.play();
+      } catch (e) {}
     });
 
     document.getElementById("altro").addEventListener("click", async () => {
       loadRandom();
-      try { await player.play(); } catch (e) {}
+      try {
+        await player.play();
+      } catch (e) {}
     });
   </script>
 </body>
 </html>
-
