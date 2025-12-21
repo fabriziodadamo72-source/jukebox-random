@@ -9,8 +9,6 @@
 <body style="font-family:Arial; text-align:center; padding:30px">
   <h2>🎁 OCHO 👽</h2>
 
-  <p id="info" style="font-size:16px; opacity:.85"></p>
-
   <audio id="player" controls preload="auto" style="width:min(520px,95vw)"></audio>
   <br><br>
 
@@ -28,27 +26,22 @@
     const FOLDER = "mp3";    // CARTELLA MP3 NEL REPO
     const SUFFIX = "_Chapter 0.mp3"; // SUFFISSO DEL NOME FILE
 
-    // ========= ELEMENTI =========
     const player = document.getElementById("player");
-    const info = document.getElementById("info");
 
     function pad3(n) {
       return String(n).padStart(3, "0");
     }
 
     function loadRandom() {
-      const n = Math.floor(Math.random() * TOTAL) + 1; // 1..123
+      const n = Math.floor(Math.random() * TOTAL) + 1;
       const filename = `${pad3(n)}${SUFFIX}`;
       const url = `${FOLDER}/${encodeURIComponent(filename)}`;
 
       player.src = url;
       player.load();
-
-      // 👇 FORMATO RICHIESTO
-      info.textContent = `Traccia casuale: ${filename} (${n}/${TOTAL})`;
     }
 
-    // CARICA UNA TRACCIA CASUALE ALL'APERTURA
+    // carica una traccia casuale all'apertura
     loadRandom();
 
     document.getElementById("btn").addEventListener("click", async () => {
@@ -66,4 +59,3 @@
   </script>
 </body>
 </html>
-
