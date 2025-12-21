@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Frase Random</title>
+</head>
+<body style="font-family:Arial; text-align:center; padding:30px">
+  <h2>🎁 La tua frase casuale</h2>
+  <p id="frase" style="font-size:22px; line-height:1.4"></p>
+
+  <button id="btn" style="font-size:18px; padding:12px 18px; cursor:pointer;">
+    ▶️ Ascolta
+  </button>
+
+  <button id="altro" style="font-size:18px; padding:12px 18px; cursor:pointer; margin-left:10px;">
+    🔁 Un’altra
+  </button>
+
+  <script>
+    let frasi = [];
+    let fraseCorrente = "";
+
+    async function caricaFrasi() {
+      const res = await fetch("frasi.csv", { cache: "no-store" });
+      const text = await res.text();
+      // prende ogni riga non vuota
+      frasi = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      nuovaFrase();
+    }
+
+    function nuovaFrase() {
+      if (!frasi.length) return;
+      fraseCorrente = frasi[Math.floor(Math.random() * frasi.length)];
+      document.getElementById("frase").textContent = fraseCorrente;
+    }
+
+    function parla() {
+      if (!fraseCorrente) return;
+      const u = new SpeechSynthesisUtterance(fraseCorrente);
+      u.lang = "it-IT";
+      u.rate = 1.0;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }
+
+    document.getElementById("btn").addEventListener("click", parla);
+    document.getElementById("altro").addEventListener("click", () => {
+      nuovaFrase();
+      parla();
+    });
+
+    caricaFrasi();
+  </script>
+</body>
+</html>
