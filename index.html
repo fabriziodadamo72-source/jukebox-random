@@ -1,160 +1,5 @@
-<!doctype html>
-<html lang="it">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OCHO</title>
-
-<style>
-  html, body { height: 100%; margin: 0; }
-  body { font-family: Arial, sans-serif; background:#000; color:#fff; }
-
-  /* ===== SCHERMATA INIZIALE ===== */
-  #gate {
-    position: fixed;
-    inset: 0;
-    background: #000;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 22px;
-    text-align: center;
-    gap: 14px;
-  }
-
-  /* Bottone iniziale (grande) */
-  #startBtn {
-    font-size: 20px;
-    padding: 16px 20px;
-    border-radius: 16px;
-    border: 0;
-    cursor: pointer;
-    color: #fff;
-    background: rgba(255,255,255,0.12);
-    box-shadow: 0 14px 34px rgba(0,0,0,0.55);
-    backdrop-filter: blur(6px);
-  }
-  #startBtn:hover { transform: translateY(-1px); }
-
-  /* Immagine dopo start */
-  #startImg {
-    display: none;
-    width: min(520px, 92vw);
-    max-height: 45vh;
-    object-fit: contain;
-    border-radius: 16px;
-    box-shadow: 0 14px 40px rgba(0,0,0,0.55);
-  }
-
-  /* Scelta pillole (dopo start) */
-  #choice {
-    display: none;
-    width: min(520px, 92vw);
-    gap: 12px;
-    margin-top: 6px;
-  }
-
-  .pill {
-    width: 100%;
-    font-size: 18px;
-    padding: 14px 16px;
-    border-radius: 14px;
-    border: 0;
-    cursor: pointer;
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.45);
-  }
-  .pill.blue { background: #0b4cff; }
-  .pill.red  { background: #ff2a2a; }
-
-  @media (max-width: 520px) {
-    #choice { flex-direction: column; }
-  }
-
-  /* ===== PROGRAMMA (OCHO) ===== */
-  #app {
-    min-height: 100vh;
-    display: none;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 26px;
-    box-sizing: border-box;
-    text-align: center;
-  }
-
-  .card {
-    width: min(720px, 95vw);
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 18px;
-    padding: 22px 18px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
-  }
-
-  h2 { margin: 0 0 16px 0; letter-spacing: 0.3px; }
-
-  audio {
-    width: min(520px, 95vw);
-    border-radius: 12px;
-  }
-
-  .buttons { margin-top: 16px; }
-
-  .btn {
-    font-size: 18px;
-    padding: 12px 18px;
-    border-radius: 12px;
-    border: none;
-    cursor: pointer;
-    background: rgba(255,255,255,0.92);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-  }
-
-  .btn + .btn { margin-left: 10px; }
-
-  @media (max-width: 520px) {
-    .btn { width: 100%; }
-    .btn + .btn { margin-left: 0; margin-top: 10px; }
-  }
-</style>
-</head>
-
-<body>
-
-<!-- SCHERMATA NERA -->
-<div id="gate">
-  <button id="startBtn">Tocca per iniziare</button>
-
-  <img id="startImg" src="assets/inizio.jpeg" alt="inizio">
-
-  <!-- player solo per intro (mobile friendly) -->
-  <audio id="introPlayer" preload="auto"></audio>
-
-  <div id="choice">
-    <button class="pill red"  id="btnRed">❤️ Pillola rossa</button>
-    <button class="pill blue" id="btnBlue">💙 Pillola blu</button>
-  </div>
-</div>
-
-<!-- APP OCHO -->
-<div id="app">
-  <div class="card">
-    <h2>🎁 OCHO 👽</h2>
-
-    <audio id="player" controls preload="auto"></audio>
-
-    <div class="buttons">
-      <button class="btn" id="btnPlay">▶️ Ascolta</button>
-      <button class="btn" id="btnNext">🔁 Un altro</button>
-    </div>
-  </div>
-</div>
-
 <script>
-  const TOTAL = 168;            // <-- metti il tuo totale reale
+  const TOTAL = 168;            // <-- DEVE essere giusto
   const FOLDER = "mp3";
   const SUFFIX = "_Chapter 0.mp3";
 
@@ -172,15 +17,43 @@
 
   function pad3(n){ return String(n).padStart(3, "0"); }
 
-  function loadRandom(){
+  function pickRandomUrl(){
     const n = Math.floor(Math.random() * TOTAL) + 1;
     const file = `${pad3(n)}${SUFFIX}`;
-    player.src = `${FOLDER}/${encodeURIComponent(file)}`;
-    player.load();
+    return `${FOLDER}/${encodeURIComponent(file)}`;
   }
 
-  // pre-carica già una random per dopo
-  loadRandom();
+  function hardStopIntro(){
+    try { introPlayer.pause(); } catch(e) {}
+    try { introPlayer.currentTime = 0; } catch(e) {}
+    // “hard stop” (su certi mobile serve)
+    try { introPlayer.removeAttribute("src"); } catch(e) {}
+    try { introPlayer.load(); } catch(e) {}
+  }
+
+  async function loadAndPlayRandom(maxTries = 8){
+    for (let i = 0; i < maxTries; i++){
+      const url = pickRandomUrl();
+      player.src = url;
+      player.load();
+
+      // aspetta un attimo che provi a caricare
+      const ok = await new Promise((resolve) => {
+        const t = setTimeout(() => resolve(false), 1200);
+
+        player.oncanplay = () => { clearTimeout(t); resolve(true); };
+        player.onerror   = () => { clearTimeout(t); resolve(false); };
+      });
+
+      if (ok){
+        try { await player.play(); } catch(e) {}
+        return;
+      }
+    }
+
+    // Se dopo N tentativi non trova nulla:
+    alert("Non trovo i file MP3 casuali. Controlla TOTAL e i nomi (es. 001_Chapter 0.mp3).");
+  }
 
   // START: parte intro e mostra scelta
   startBtn.addEventListener("click", async () => {
@@ -198,21 +71,23 @@
     } catch(e) {}
   });
 
-  // Blu: ANSA
+  // Blu: ANSA (stop intro prima di andare via)
   document.getElementById("btnBlue").addEventListener("click", () => {
+    hardStopIntro();
     window.location.href = "https://www.ansa.it/sito/notizie/topnews/index.shtml";
   });
 
   // Rosso: entra nel programma
   document.getElementById("btnRed").addEventListener("click", async () => {
-    // ferma l’intro per evitare sovrapposizioni
-    try { introPlayer.pause(); introPlayer.currentTime = 0; } catch(e) {}
+    // STOP intro davvero
+    hardStopIntro();
 
+    // Mostra programma
     gate.style.display = "none";
     app.style.display = "flex";
 
-    loadRandom();
-    try { await player.play(); } catch(e) {}
+    // Carica e avvia random (con retry se qualche file manca)
+    await loadAndPlayRandom();
   });
 
   // Bottoni programma
@@ -221,10 +96,6 @@
   });
 
   document.getElementById("btnNext").addEventListener("click", async () => {
-    loadRandom();
-    try { await player.play(); } catch(e) {}
+    await loadAndPlayRandom();
   });
 </script>
-
-</body>
-</html>
