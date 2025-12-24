@@ -6,170 +6,220 @@
 <title>OCHO</title>
 
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-}
+  html, body { height: 100%; margin: 0; }
+  body { font-family: Arial, sans-serif; background:#000; color:#fff; }
 
-body {
-  font-family: Arial, sans-serif;
-  background: #000;
-  color: #fff;
-}
-
-/* SFONDO MATRIX */
-.background {
-  position: fixed;
-  inset: 0;
-  background-image: url("assets/matrix.jpg");
-  background-size: cover;
-  background-position: center bottom;
-  z-index: -1;
-}
-
-/* OVERLAY per leggibilità */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0,0,0,0.85) 0%,
-    rgba(0,0,0,0.55) 35%,
-    rgba(0,0,0,0.35) 55%,
-    rgba(0,0,0,0.75) 100%
-  );
-  z-index: -1;
-}
-
-/* CONTENUTO */
-.wrapper {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-/* PARTE ALTA */
-.top {
-  text-align: center;
-}
-
-h1 {
-  margin: 10px 0 14px;
-  font-size: 26px;
-  letter-spacing: 2px;
-}
-
-.subtitle {
-  font-size: 14px;
-  opacity: 0.8;
-  margin-bottom: 16px;
-}
-
-audio {
-  width: min(520px, 95vw);
-  border-radius: 14px;
-}
-
-/* PARTE BASSA (BOTTONI) */
-.bottom {
-  display: flex;
-  justify-content: center;
-  gap: 18px;
-  margin-bottom: 40px;
-}
-
-button {
-  font-size: 18px;
-  padding: 14px 22px;
-  border-radius: 14px;
-  border: none;
-  cursor: pointer;
-  color: #fff;
-  background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 8px 22px rgba(0,0,0,0.6);
-}
-
-button:hover {
-  transform: scale(1.05);
-}
-
-.btn-play {
-  border: 2px solid #00d4ff;
-}
-
-.btn-random {
-  border: 2px solid #ff3b3b;
-}
-
-/* MOBILE */
-@media (max-width: 600px) {
-  .bottom {
+  /* ===== SCHERMATA INIZIALE (NERA) ===== */
+  #gate {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
     flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 22px;
+    text-align: center;
+    gap: 14px;
   }
 
-  button {
-    width: 100%;
+  #tapText {
+    font-size: 18px;
+    opacity: 0.9;
   }
-}
+
+  /* Immagine che appare dopo il tocco */
+  #startImg {
+    display: none;
+    width: min(520px, 92vw);
+    max-height: 45vh;
+    object-fit: contain;
+    border-radius: 16px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+  }
+
+  /* Pulsanti blu/rosso (appaiono dopo il tocco) */
+  #choice {
+    display: none;
+    width: min(520px, 92vw);
+    gap: 12px;
+    margin-top: 6px;
+  }
+
+  .pill {
+    width: 100%;
+    font-size: 18px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 0;
+    cursor: pointer;
+    color: #fff;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+  }
+  .pill.blue { background: #0b4cff; }
+  .pill.red  { background: #ff2a2a; }
+
+  /* ===== PROGRAMMA (OCHO) ===== */
+  #app {
+    min-height: 100vh;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 26px;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .card {
+    width: min(720px, 95vw);
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 18px;
+    padding: 22px 18px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+  }
+
+  h2 {
+    margin: 0 0 16px 0;
+    letter-spacing: 0.3px;
+  }
+
+  audio {
+    width: min(520px, 95vw);
+    border-radius: 12px;
+  }
+
+  .buttons { margin-top: 16px; }
+
+  .btn {
+    font-size: 18px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  .btn + .btn { margin-left: 10px; }
+
+  @media (max-width: 520px) {
+    #choice { flex-direction: column; }
+    .btn { width: 100%; }
+    .btn + .btn { margin-left: 0; margin-top: 10px; }
+  }
 </style>
 </head>
 
 <body>
 
-<div class="background"></div>
-<div class="overlay"></div>
+<!-- SCHERMATA NERA -->
+<div id="gate">
+  <div id="tapText">Tocca lo schermo per iniziare</div>
 
-<div class="wrapper">
+  <img id="startImg" src="assets/inizio.jpeg" alt="inizio">
 
-  <!-- ALTO -->
-  <div class="top">
-    <h1>O C H O</h1>
-    <div class="subtitle">You already chose.</div>
+  <div id="choice">
+    <button class="pill blue" id="btnBlue">💙 Pillola blu</button>
+    <button class="pill red"  id="btnRed">❤️ Pillola rossa</button>
+  </div>
+</div>
+
+<!-- APP OCHO -->
+<div id="app">
+  <div class="card">
+    <h2>🎁 OCHO 👽</h2>
 
     <audio id="player" controls preload="auto"></audio>
-  </div>
 
-  <!-- BASSO -->
-  <div class="bottom">
-    <button class="btn-play" id="btnPlay">▶️ Ascolta</button>
-    <button class="btn-random" id="btnNext">🔁 Un altro</button>
+    <div class="buttons">
+      <button class="btn" id="btnPlay">▶️ Ascolta</button>
+      <button class="btn" id="btnNext">🔁 Un altro</button>
+    </div>
   </div>
-
 </div>
 
 <script>
-const TOTAL = 168;
-const FOLDER = "mp3";
-const SUFFIX = "_Chapter 0.mp3";
+  // ===== CONFIG =====
+  const TOTAL = 168;            // <-- metti il tuo totale reale
+  const FOLDER = "mp3";
+  const SUFFIX = "_Chapter 0.mp3";
 
-const player = document.getElementById("player");
+  const gate = document.getElementById("gate");
+  const startImg = document.getElementById("startImg");
+  const choice = document.getElementById("choice");
 
-function pad3(n) {
-  return String(n).padStart(3, "0");
-}
+  const app = document.getElementById("app");
+  const player = document.getElementById("player");
 
-function loadRandom() {
-  const n = Math.floor(Math.random() * TOTAL) + 1;
-  const file = `${pad3(n)}${SUFFIX}`;
-  player.src = `${FOLDER}/${encodeURIComponent(file)}`;
-  player.load();
-}
+  let gateUnlocked = false;
 
-loadRandom();
+  function pad3(n){ return String(n).padStart(3, "0"); }
 
-document.getElementById("btnPlay").onclick = async () => {
-  try { await player.play(); } catch(e){}
-};
+  function loadRandom(){
+    const n = Math.floor(Math.random() * TOTAL) + 1;
+    const file = `${pad3(n)}${SUFFIX}`;
+    player.src = `${FOLDER}/${encodeURIComponent(file)}`;
+    player.load();
+  }
 
-document.getElementById("btnNext").onclick = async () => {
+  // Carica già una traccia random per l'app (non parte finché non vai nel programma)
   loadRandom();
-  try { await player.play(); } catch(e){}
-};
+
+  // Primo tocco: avvia inizio.mp3 + mostra immagine + mostra scelta
+  async function unlockGate(){
+    if (gateUnlocked) return;
+    gateUnlocked = true;
+
+    // Mostra immagine e bottoni
+    startImg.style.display = "block";
+    choice.style.display = "flex";
+
+    // Avvia audio di intro
+    try {
+      player.src = `${FOLDER}/inizio.mp3`;
+      player.load();
+      await player.play();
+    } catch(e) {
+      // se il browser blocca, l'utente può premere play nel player quando entrerà nel programma
+    }
+
+    // Dopo sblocco, non serve più il testo "tocca"
+    document.getElementById("tapText").textContent = "Scegli.";
+    document.removeEventListener("click", unlockGate);
+    document.removeEventListener("touchstart", unlockGate);
+  }
+
+  document.addEventListener("click", unlockGate, { once: false });
+  document.addEventListener("touchstart", unlockGate, { once: false });
+
+  // Pillola blu: redirect ANSA
+  document.getElementById("btnBlue").addEventListener("click", () => {
+    window.location.href = "https://www.ansa.it/sito/notizie/topnews/index.shtml";
+  });
+
+  // Pillola rossa: entra nel programma OCHO
+  document.getElementById("btnRed").addEventListener("click", async () => {
+    // Nascondi gate e mostra app
+    gate.style.display = "none";
+    app.style.display = "flex";
+
+    // Ora carica random e prova a partire
+    loadRandom();
+    try { await player.play(); } catch(e) {}
+  });
+
+  // Bottoni del programma
+  document.getElementById("btnPlay").addEventListener("click", async () => {
+    try { await player.play(); } catch(e) {}
+  });
+
+  document.getElementById("btnNext").addEventListener("click", async () => {
+    loadRandom();
+    try { await player.play(); } catch(e) {}
+  });
 </script>
 
 </body>
