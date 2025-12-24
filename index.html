@@ -1,101 +1,228 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OCHO</title>
+
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { font-family: Arial, sans-serif; background:#000; color:#fff; }
+
+  /* ===== SCHERMATA INIZIALE ===== */
+  #gate {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 22px;
+    text-align: center;
+    gap: 14px;
+  }
+
+  #startBtn {
+    font-size: 20px;
+    padding: 16px 22px;
+    border-radius: 16px;
+    border: 0;
+    cursor: pointer;
+    color: #fff;
+    background: rgba(255,255,255,0.15);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.55);
+  }
+
+  #startImg {
+    display: none;
+    width: min(520px, 92vw);
+    max-height: 45vh;
+    object-fit: contain;
+    border-radius: 16px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+  }
+
+  #choice {
+    display: none;
+    width: min(520px, 92vw);
+    gap: 12px;
+    margin-top: 6px;
+  }
+
+  .pill {
+    width: 100%;
+    font-size: 18px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 0;
+    cursor: pointer;
+    color: #fff;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+  }
+  .pill.red  { background:#ff2a2a; }
+  .pill.blue { background:#0b4cff; }
+
+  @media (max-width: 520px) {
+    #choice { flex-direction: column; }
+  }
+
+  /* ===== APP ===== */
+  #app {
+    min-height: 100vh;
+    display: none;
+    justify-content: center;
+    padding: 26px;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .card {
+    width: min(720px, 95vw);
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 18px;
+    padding: 22px 18px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+  }
+
+  h2 { margin: 0 0 16px 0; }
+
+  audio {
+    width: min(520px, 95vw);
+    border-radius: 12px;
+  }
+
+  .buttons { margin-top: 16px; }
+
+  .btn {
+    font-size: 18px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  .btn + .btn { margin-left: 10px; }
+
+  @media (max-width: 520px) {
+    .btn { width: 100%; }
+    .btn + .btn { margin-left: 0; margin-top: 10px; }
+  }
+</style>
+</head>
+
+<body>
+
+<!-- GATE -->
+<div id="gate">
+  <button id="startBtn">Tocca per iniziare</button>
+
+  <img id="startImg" src="assets/inizio.jpeg" alt="inizio">
+
+  <audio id="introPlayer" preload="auto"></audio>
+
+  <div id="choice">
+    <button class="pill red"  id="btnRed">❤️ Pillola rossa</button>
+    <button class="pill blue" id="btnBlue">💙 Pillola blu</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="card">
+    <h2>🎁 OCHO 👽</h2>
+
+    <audio id="player" controls preload="auto"></audio>
+
+    <div class="buttons">
+      <button class="btn" id="btnPlay">▶️ Ascolta</button>
+      <button class="btn" id="btnNext">🔁 Un altro</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  const TOTAL = 168;            // <-- DEVE essere giusto
+  /* ===== CONFIG ===== */
+  const TOTAL  = 168;              // NUMERO REALE FILE
   const FOLDER = "mp3";
   const SUFFIX = "_Chapter 0.mp3";
 
-  const gate = document.getElementById("gate");
   const startBtn = document.getElementById("startBtn");
   const startImg = document.getElementById("startImg");
-  const choice = document.getElementById("choice");
+  const choice   = document.getElementById("choice");
+  const gate     = document.getElementById("gate");
 
   const introPlayer = document.getElementById("introPlayer");
-
-  const app = document.getElementById("app");
-  const player = document.getElementById("player");
+  const player      = document.getElementById("player");
+  const app         = document.getElementById("app");
 
   let started = false;
 
-  function pad3(n){ return String(n).padStart(3, "0"); }
+  function pad2(n){
+    return String(n).padStart(2, "0");
+  }
 
-  function pickRandomUrl(){
+  function randomUrl(){
     const n = Math.floor(Math.random() * TOTAL) + 1;
-    const file = `${pad3(n)}${SUFFIX}`;
+    const file = `${pad2(n)}${SUFFIX}`;
     return `${FOLDER}/${encodeURIComponent(file)}`;
   }
 
-  function hardStopIntro(){
-    try { introPlayer.pause(); } catch(e) {}
-    try { introPlayer.currentTime = 0; } catch(e) {}
-    // “hard stop” (su certi mobile serve)
-    try { introPlayer.removeAttribute("src"); } catch(e) {}
-    try { introPlayer.load(); } catch(e) {}
+  function stopIntro(){
+    try { introPlayer.pause(); } catch(e){}
+    try { introPlayer.currentTime = 0; } catch(e){}
+    try { introPlayer.removeAttribute("src"); introPlayer.load(); } catch(e){}
   }
 
-  async function loadAndPlayRandom(maxTries = 8){
-    for (let i = 0; i < maxTries; i++){
-      const url = pickRandomUrl();
-      player.src = url;
-      player.load();
-
-      // aspetta un attimo che provi a caricare
-      const ok = await new Promise((resolve) => {
-        const t = setTimeout(() => resolve(false), 1200);
-
-        player.oncanplay = () => { clearTimeout(t); resolve(true); };
-        player.onerror   = () => { clearTimeout(t); resolve(false); };
-      });
-
-      if (ok){
-        try { await player.play(); } catch(e) {}
-        return;
-      }
-    }
-
-    // Se dopo N tentativi non trova nulla:
-    alert("Non trovo i file MP3 casuali. Controlla TOTAL e i nomi (es. 001_Chapter 0.mp3).");
+  async function playRandom(){
+    player.src = randomUrl();
+    player.load();
+    try { await player.play(); } catch(e){}
   }
 
-  // START: parte intro e mostra scelta
+  /* START */
   startBtn.addEventListener("click", async () => {
     if (started) return;
     started = true;
 
     startBtn.style.display = "none";
     startImg.style.display = "block";
-    choice.style.display = "flex";
+    choice.style.display   = "flex";
 
     try {
       introPlayer.src = `${FOLDER}/inizio.mp3`;
       introPlayer.load();
       await introPlayer.play();
-    } catch(e) {}
+    } catch(e){}
   });
 
-  // Blu: ANSA (stop intro prima di andare via)
-  document.getElementById("btnBlue").addEventListener("click", () => {
-    hardStopIntro();
+  /* BLU */
+  document.getElementById("btnBlue").onclick = () => {
+    stopIntro();
     window.location.href = "https://www.ansa.it/sito/notizie/topnews/index.shtml";
-  });
+  };
 
-  // Rosso: entra nel programma
-  document.getElementById("btnRed").addEventListener("click", async () => {
-    // STOP intro davvero
-    hardStopIntro();
-
-    // Mostra programma
+  /* ROSSO */
+  document.getElementById("btnRed").onclick = async () => {
+    stopIntro();
     gate.style.display = "none";
-    app.style.display = "flex";
+    app.style.display  = "flex";
+    await playRandom();
+  };
 
-    // Carica e avvia random (con retry se qualche file manca)
-    await loadAndPlayRandom();
-  });
+  /* CONTROLLI */
+  document.getElementById("btnPlay").onclick = async () => {
+    try { await player.play(); } catch(e){}
+  };
 
-  // Bottoni programma
-  document.getElementById("btnPlay").addEventListener("click", async () => {
-    try { await player.play(); } catch(e) {}
-  });
-
-  document.getElementById("btnNext").addEventListener("click", async () => {
-    await loadAndPlayRandom();
-  });
+  document.getElementById("btnNext").onclick = async () => {
+    await playRandom();
+  };
 </script>
+
+</body>
+</html>
