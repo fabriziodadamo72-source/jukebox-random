@@ -9,7 +9,7 @@
   html, body { height: 100%; margin: 0; }
   body { font-family: Arial, sans-serif; background:#000; color:#fff; }
 
-  /* ===== SCHERMATA INIZIALE (NERA) ===== */
+  /* ===== SCHERMATA INIZIALE ===== */
   #gate {
     position: fixed;
     inset: 0;
@@ -23,11 +23,21 @@
     gap: 14px;
   }
 
-  #tapText {
-    font-size: 18px;
-    opacity: 0.9;
+  /* Bottone iniziale (grande) */
+  #startBtn {
+    font-size: 20px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: 0;
+    cursor: pointer;
+    color: #fff;
+    background: rgba(255,255,255,0.12);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
   }
+  #startBtn:hover { transform: translateY(-1px); }
 
+  /* Immagine dopo start */
   #startImg {
     display: none;
     width: min(520px, 92vw);
@@ -37,6 +47,7 @@
     box-shadow: 0 14px 40px rgba(0,0,0,0.55);
   }
 
+  /* Scelta pillole (dopo start) */
   #choice {
     display: none;
     width: min(520px, 92vw);
@@ -115,15 +126,15 @@
 
 <!-- SCHERMATA NERA -->
 <div id="gate">
-  <div id="tapText">Tocca lo schermo per iniziare</div>
+  <button id="startBtn">Tocca per iniziare</button>
 
   <img id="startImg" src="assets/inizio.jpeg" alt="inizio">
 
-  <!-- Audio dedicato all'intro (più affidabile su mobile) -->
+  <!-- player solo per intro (mobile friendly) -->
   <audio id="introPlayer" preload="auto"></audio>
 
-  <!-- BOTTONI INVERTITI: PRIMA ROSSO POI BLU -->
   <div id="choice">
+    <!-- Se vuoi invertiti, scambia l'ordine -->
     <button class="pill red"  id="btnRed">❤️ Pillola rossa</button>
     <button class="pill blue" id="btnBlue">💙 Pillola blu</button>
   </div>
@@ -149,15 +160,16 @@
   const SUFFIX = "_Chapter 0.mp3";
 
   const gate = document.getElementById("gate");
+  const startBtn = document.getElementById("startBtn");
   const startImg = document.getElementById("startImg");
   const choice = document.getElementById("choice");
-  const tapText = document.getElementById("tapText");
 
   const introPlayer = document.getElementById("introPlayer");
+
   const app = document.getElementById("app");
   const player = document.getElementById("player");
 
-  let unlocked = false;
+  let started = false;
 
   function pad3(n){ return String(n).padStart(3, "0"); }
 
@@ -168,35 +180,30 @@
     player.load();
   }
 
-  // Precarica random per dopo
+  // pre-carica già una random per dopo
   loadRandom();
 
-  // Sblocco: usare POINTERDOWN (più affidabile su mobile/in-app browser)
-  async function unlock() {
-    if (unlocked) return;
-    unlocked = true;
+  // START: parte intro e mostra scelta
+  startBtn.addEventListener("click", async () => {
+    if (started) return;
+    started = true;
 
+    // nascondi bottone "tocca"
+    startBtn.style.display = "none";
+
+    // mostra immagine e bottoni scelta
     startImg.style.display = "block";
     choice.style.display = "flex";
-    tapText.textContent = "Scegli.";
 
-    // Intro audio
+    // avvia inizio.mp3 (questo click è il "gesto utente" -> mobile ok)
     try {
       introPlayer.src = `${FOLDER}/inizio.mp3`;
       introPlayer.load();
-      // play immediato dentro gesto utente
       await introPlayer.play();
-    } catch(e) {
-      // se qualche browser blocca ancora, non si rompe niente:
-      // l'utente sentirà dal programma quando preme rosso
-    }
+    } catch(e) {}
+  });
 
-    gate.removeEventListener("pointerdown", unlock);
-  }
-
-  gate.addEventListener("pointerdown", unlock);
-
-  // Blu: redirect ANSA
+  // Blu: ANSA
   document.getElementById("btnBlue").addEventListener("click", () => {
     window.location.href = "https://www.ansa.it/sito/notizie/topnews/index.shtml";
   });
