@@ -7,97 +7,140 @@
 
 <style>
 html, body {
-  height: 100%;
   margin: 0;
+  padding: 0;
+  height: 100%;
 }
 
 body {
   font-family: Arial, sans-serif;
   background: #000;
-  display: flex;
-  flex-direction: column;
   color: #fff;
 }
 
-/* =====================
-   PARTE ALTA (PLAYER)
-   ===================== */
-.top {
-  padding: 18px 16px 12px;
-  text-align: center;
-  background: linear-gradient(
-    rgba(0,0,0,0.85),
-    rgba(0,0,0,0.55)
-  );
+/* SFONDO MATRIX */
+.background {
+  position: fixed;
+  inset: 0;
+  background-image: url("assets/matrix.jpg");
+  background-size: cover;
+  background-position: center bottom;
+  z-index: -1;
 }
 
-h2 {
-  margin: 0 0 12px;
-  font-size: 22px;
+/* OVERLAY per leggibilità */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.85) 0%,
+    rgba(0,0,0,0.55) 35%,
+    rgba(0,0,0,0.35) 55%,
+    rgba(0,0,0,0.75) 100%
+  );
+  z-index: -1;
+}
+
+/* CONTENUTO */
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* PARTE ALTA */
+.top {
+  text-align: center;
+}
+
+h1 {
+  margin: 10px 0 14px;
+  font-size: 26px;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 16px;
 }
 
 audio {
   width: min(520px, 95vw);
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
-.buttons {
-  margin-top: 14px;
+/* PARTE BASSA (BOTTONI) */
+.bottom {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 40px;
 }
 
 button {
   font-size: 18px;
-  padding: 12px 18px;
-  border-radius: 12px;
+  padding: 14px 22px;
+  border-radius: 14px;
   border: none;
   cursor: pointer;
-  background: rgba(255,255,255,0.92);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  color: #fff;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.6);
 }
 
-button + button {
-  margin-left: 10px;
+button:hover {
+  transform: scale(1.05);
 }
 
-@media (max-width: 520px) {
+.btn-play {
+  border: 2px solid #00d4ff;
+}
+
+.btn-random {
+  border: 2px solid #ff3b3b;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .bottom {
+    flex-direction: column;
+  }
+
   button {
     width: 100%;
   }
-  button + button {
-    margin-left: 0;
-    margin-top: 10px;
-  }
-}
-
-/* =====================
-   PARTE BASSA (IMMAGINE)
-   ===================== */
-.bottom {
-  flex: 1; /* prende tutto lo spazio restante */
-  background-image: url("assets/sfondo.jpg");
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  background-size: contain; /* <-- NON TAGLIA */
 }
 </style>
 </head>
 
 <body>
 
-  <!-- PARTE ALTA -->
+<div class="background"></div>
+<div class="overlay"></div>
+
+<div class="wrapper">
+
+  <!-- ALTO -->
   <div class="top">
-    <h2>🎁 OCHO 👽</h2>
+    <h1>O C H O</h1>
+    <div class="subtitle">You already chose.</div>
 
     <audio id="player" controls preload="auto"></audio>
-
-    <div class="buttons">
-      <button id="btn">▶️ Ascolta</button>
-      <button id="altro">🔁 Un altro</button>
-    </div>
   </div>
 
-  <!-- PARTE BASSA -->
-  <div class="bottom"></div>
+  <!-- BASSO -->
+  <div class="bottom">
+    <button class="btn-play" id="btnPlay">▶️ Ascolta</button>
+    <button class="btn-random" id="btnNext">🔁 Un altro</button>
+  </div>
+
+</div>
 
 <script>
 const TOTAL = 168;
@@ -119,11 +162,11 @@ function loadRandom() {
 
 loadRandom();
 
-document.getElementById("btn").onclick = async () => {
+document.getElementById("btnPlay").onclick = async () => {
   try { await player.play(); } catch(e){}
 };
 
-document.getElementById("altro").onclick = async () => {
+document.getElementById("btnNext").onclick = async () => {
   loadRandom();
   try { await player.play(); } catch(e){}
 };
