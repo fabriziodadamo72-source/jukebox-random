@@ -134,7 +134,6 @@
   <audio id="introPlayer" preload="auto"></audio>
 
   <div id="choice">
-    <!-- Se vuoi invertiti, scambia l'ordine -->
     <button class="pill red"  id="btnRed">❤️ Pillola rossa</button>
     <button class="pill blue" id="btnBlue">💙 Pillola blu</button>
   </div>
@@ -188,14 +187,10 @@
     if (started) return;
     started = true;
 
-    // nascondi bottone "tocca"
     startBtn.style.display = "none";
-
-    // mostra immagine e bottoni scelta
     startImg.style.display = "block";
     choice.style.display = "flex";
 
-    // avvia inizio.mp3 (questo click è il "gesto utente" -> mobile ok)
     try {
       introPlayer.src = `${FOLDER}/inizio.mp3`;
       introPlayer.load();
@@ -210,6 +205,9 @@
 
   // Rosso: entra nel programma
   document.getElementById("btnRed").addEventListener("click", async () => {
+    // ferma l’intro per evitare sovrapposizioni
+    try { introPlayer.pause(); introPlayer.currentTime = 0; } catch(e) {}
+
     gate.style.display = "none";
     app.style.display = "flex";
 
