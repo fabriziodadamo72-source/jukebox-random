@@ -72,19 +72,28 @@
     min-height: 100vh;
     display: none;
     justify-content: center;
+    align-items: flex-start;
     padding: 26px;
     box-sizing: border-box;
     text-align: center;
+    background: #000;
+  }
+
+  /* ✅ Sfondo Matrix quando entra nel programma */
+  #app.matrix {
+    background: url("assets/matrix.jpg") no-repeat center center fixed;
+    background-size: cover;
   }
 
   .card {
     width: min(720px, 95vw);
-    background: rgba(255,255,255,0.10);
+    background: rgba(0,0,0,0.55);
     border: 1px solid rgba(255,255,255,0.18);
     border-radius: 18px;
     padding: 22px 18px;
     backdrop-filter: blur(10px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.55);
   }
 
   h2 { margin: 0 0 16px 0; }
@@ -147,7 +156,7 @@
 
 <script>
   /* ===== CONFIG ===== */
-  const TOTAL  = 168;              // NUMERO REALE FILE
+  const TOTAL  = 168;              // <-- metti il tuo totale reale
   const FOLDER = "mp3";
   const SUFFIX = "_Chapter 0.mp3";
 
@@ -209,8 +218,13 @@
   /* ROSSO */
   document.getElementById("btnRed").onclick = async () => {
     stopIntro();
+
     gate.style.display = "none";
     app.style.display  = "flex";
+
+    /* ✅ attiva sfondo Matrix */
+    app.classList.add("matrix");
+
     await playRandom();
   };
 
