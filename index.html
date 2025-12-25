@@ -1,667 +1,183 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OCHO • Random Jukebox</title>
-  <style>
-    :root{
-      --green:#00ff9a;
-      --blue:#1f6fff;
-      --red:#ff2d2d;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OCHO • Random Jukebox</title>
 
-    *{box-sizing:border-box}
-    html,body{height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:#eafff6;}
-    body{overflow:hidden; background:#000;}
+<style>
+html,body{
+  margin:0;height:100%;background:#000;color:#eafff6;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+}
+.bg{
+  position:fixed;inset:0;
+  background:url("matrix.jpg") center/cover no-repeat;
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45)}
+.panel{
+  position:relative;height:100%;
+  display:flex;align-items:center;justify-content:center;
+}
+.card{
+  background:rgba(0,0,0,.55);
+  border:1px solid rgba(0,255,154,.3);
+  border-radius:18px;padding:24px;
+  text-align:center;max-width:720px;width:90%;
+}
+h1{margin:0 0 10px;letter-spacing:.1em}
+p{font-size:13px;opacity:.9}
 
-    .bg{
-      position:fixed; inset:0;
-      background:
-        radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.10), transparent 60%),
-        radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.08), transparent 60%),
-        url("matrix.jpg") center/cover no-repeat;
-      filter: saturate(1.05) contrast(1.05);
-      transform: scale(1.02);
-    }
-    .vignette{
-      position:fixed; inset:-40px;
-      background: radial-gradient(circle at 50% 55%, transparent 35%, rgba(0,0,0,.75) 78%);
-      pointer-events:none;
-    }
-    .scanlines{
-      position:fixed; inset:0;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(255,255,255,.02),
-        rgba(255,255,255,.02) 1px,
-        rgba(0,0,0,0) 3px,
-        rgba(0,0,0,0) 6px
-      );
-      mix-blend-mode: overlay;
-      opacity:.45;
-      pointer-events:none;
-    }
+.controls,.menu{
+  display:flex;gap:14px;justify-content:center;margin-top:20px;
+}
+button{
+  cursor:pointer;border-radius:14px;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(0,0,0,.6);
+  color:#fff;padding:12px 18px;
+  font-weight:700;letter-spacing:.06em;
+}
+.red{border-color:#ff2d2d}
+.blue{border-color:#1f6fff}
 
-    .wrap{
-      position:relative;
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:18px;
-    }
+.hidden{display:none}
 
-    .panel{
-      width:min(980px, 96vw);
-      height:min(640px, 92vh);
-      border:1px solid rgba(0,255,154,.25);
-      border-radius:18px;
-      background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.35));
-      box-shadow: 0 0 0 1px rgba(0,255,154,.12) inset, 0 25px 80px rgba(0,0,0,.6);
-      position:relative;
-      overflow:hidden;
-    }
-
-    .hud{
-      position:absolute; left:16px; right:16px; top:14px;
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px;
-      pointer-events:none;
-    }
-    .brand{
-      display:flex; flex-direction:column; gap:2px;
-    }
-    .brand b{
-      letter-spacing:.22em;
-      color: var(--green);
-      text-shadow: 0 0 12px rgba(0,255,154,.35);
-      font-size:12px;
-    }
-    .brand span{
-      font-size:12px;
-      opacity:.8;
-    }
-    .status{
-      font-size:12px;
-      color:#bfffe7;
-      opacity:.9;
-      text-align:right;
-    }
-    .status .dot{
-      display:inline-block;
-      width:7px;height:7px;border-radius:99px;
-      background: var(--green);
-      box-shadow: 0 0 10px rgba(0,255,154,.6);
-      margin-right:8px;
-      vertical-align:middle;
-    }
-
-    /* SCREENS */
-    .screen{
-      position:absolute; inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:26px;
-      transition: opacity .18s ease, transform .18s ease;
-    }
-    .screen.hidden{
-      opacity:0;
-      transform: scale(.98);
-      pointer-events:none;
-    }
-
-    .card{
-      width:min(680px, 92%);
-      background: rgba(0,0,0,.40);
-      border:1px solid rgba(0,255,154,.20);
-      border-radius:18px;
-      padding:22px 20px;
-      box-shadow: 0 0 0 1px rgba(0,255,154,.08) inset;
-      backdrop-filter: blur(8px);
-      text-align:center;
-    }
-    .title{
-      margin:0 0 10px 0;
-      font-size:22px;
-      letter-spacing:.06em;
-      text-shadow: 0 0 18px rgba(0,255,154,.22);
-    }
-    .subtitle{
-      margin:0 0 14px 0;
-      font-size:13px;
-      line-height:1.45;
-      opacity:.9;
-    }
-    .quote{
-      margin:0;
-      font-size:12px;
-      opacity:.8;
-      color:#baf8de;
-    }
-
-    /* BOTTOM CONTROLS (BLUE/RED) */
-    .controls{
-      position:absolute;
-      left:0; right:0;
-      bottom:18px;
-      display:flex;
-      justify-content:space-between;
-      padding:0 40px;
-      gap:18px;
-      pointer-events:auto;
-    }
-    .controls .col{
-      width:48%;
-      display:flex;
-      justify-content:center;
-    }
-    .controls .col.left{ transform: translateX(-6%); }
-    .controls .col.right{ transform: translateX(6%); }
-
-    .btn{
-      appearance:none;
-      border:1px solid rgba(255,255,255,.14);
-      border-radius:16px;
-      background: rgba(0,0,0,.55);
-      color:#fff;
-      padding:10px 14px;
-      width:min(240px, 86%);
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-      box-shadow: 0 0 0 1px rgba(0,0,0,.35) inset;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn:active{ transform: translateY(1px) scale(.99); }
-    .btn .label{
-      font-weight:700;
-      letter-spacing:.06em;
-      font-size:12px;
-      text-transform:uppercase;
-      opacity:.95;
-    }
-
-    .btn.blue{
-      border-color: rgba(31,111,255,.35);
-      box-shadow: 0 0 18px rgba(31,111,255,.12), 0 0 0 1px rgba(31,111,255,.10) inset;
-    }
-    .btn.red{
-      border-color: rgba(255,45,45,.35);
-      box-shadow: 0 0 18px rgba(255,45,45,.12), 0 0 0 1px rgba(255,45,45,.10) inset;
-    }
-
-    .pill{
-      width:22px; height:12px;
-      border-radius:999px;
-      position:relative;
-      display:inline-block;
-      border:1px solid rgba(255,255,255,.18);
-      overflow:hidden;
-    }
-    .pill:before, .pill:after{
-      content:"";
-      position:absolute; inset:0;
-      width:50%;
-      opacity:.95;
-    }
-    .pill:after{ left:50%; }
-    .pill.blue:before{ background: rgba(31,111,255,.95); }
-    .pill.blue:after{ background: rgba(0,0,0,.25); }
-    .pill.red:before{ background: rgba(255,45,45,.95); }
-    .pill.red:after{ background: rgba(0,0,0,.25); }
-
-    /* RED MENU */
-    .menuGrid{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap:12px;
-      margin-top:14px;
-    }
-    .menuBtn{
-      border:1px solid rgba(0,255,154,.18);
-      background: rgba(0,0,0,.40);
-      color:#dfffee;
-      border-radius:16px;
-      padding:14px 12px;
-      cursor:pointer;
-      font-weight:800;
-      letter-spacing:.06em;
-      text-transform:uppercase;
-      transition: transform .12s ease, box-shadow .12s ease;
-    }
-    .menuBtn:hover{ box-shadow: 0 0 20px rgba(0,255,154,.10); }
-    .menuBtn:active{ transform: translateY(1px) scale(.99); }
-
-    .backRow{
-      display:flex;
-      justify-content:center;
-      margin-top:12px;
-    }
-    .ghost{
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.28);
-      color:#dfffee;
-      border-radius:14px;
-      padding:10px 12px;
-      cursor:pointer;
-      font-weight:700;
-      letter-spacing:.04em;
-    }
-
-    /* PLAYER */
-    .playerbar{
-      position:absolute;
-      left:16px; right:16px;
-      bottom:86px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(0,255,154,.18);
-      background: rgba(0,0,0,.35);
-      backdrop-filter: blur(8px);
-      opacity:0;
-      transform: translateY(8px);
-      transition: opacity .18s ease, transform .18s ease;
-      pointer-events:none;
-    }
-    .playerbar.on{
-      opacity:1;
-      transform: translateY(0);
-    }
-    .track{
-      font-size:12px;
-      color:#dfffee;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width:68%;
-    }
-    .mini{
-      display:flex; gap:8px; align-items:center;
-      font-size:11px;
-      opacity:.9;
-    }
-    .mini button{
-      pointer-events:auto;
-      cursor:pointer;
-      background: rgba(0,0,0,.45);
-      color:#dfffee;
-      border:1px solid rgba(0,255,154,.18);
-      border-radius:10px;
-      padding:6px 10px;
-    }
-    .mini button:active{ transform: translateY(1px); }
-
-    /* Red overlay hint */
-    .redmode{
-      position:absolute; inset:0;
-      background:
-        radial-gradient(1000px 700px at 50% 70%, rgba(255,45,45,.10), transparent 60%),
-        rgba(0,0,0,.20);
-      opacity:0;
-      transition: opacity .22s ease;
-      pointer-events:none;
-    }
-    .redmode.on{ opacity:1; }
-
-    @media (max-width:640px){
-      .controls{ padding:0 18px; bottom:14px; }
-      .controls .col.left{ transform: translateX(-2%); }
-      .controls .col.right{ transform: translateX(2%); }
-      .btn{ width:92%; }
-      .title{ font-size:18px; }
-      .menuGrid{ grid-template-columns: 1fr; }
-    }
-  </style>
+.player{
+  position:fixed;left:50%;bottom:18px;
+  transform:translateX(-50%);
+  width:90%;max-width:720px;
+  background:rgba(0,0,0,.6);
+  border:1px solid rgba(0,255,154,.3);
+  border-radius:14px;padding:10px;
+}
+.track{font-size:12px;margin-bottom:6px;opacity:.9}
+video,audio{width:100%}
+</style>
 </head>
 
 <body>
-  <div class="bg" id="bg"></div>
-  <div class="vignette"></div>
-  <div class="scanlines"></div>
+<div class="bg"></div>
+<div class="overlay"></div>
 
-  <div class="wrap">
-    <div class="panel" role="application" aria-label="OCHO Random Jukebox">
-      <div class="redmode" id="redmode"></div>
-
-      <div class="hud">
-        <div class="brand">
-          <b>O C H O</b>
-          <span>Random Jukebox</span>
-        </div>
-        <div class="status">
-          <span class="dot"></span><span id="statusText">In attesa…</span>
-        </div>
-      </div>
-
-      <!-- SCREEN 1: HOME -->
-      <div class="screen" id="screenHome">
-        <div class="card">
-          <h1 class="title">Scegli la pillola.</h1>
-          <p class="subtitle">
-            La realtà è informazione che ti attraversa: emozione, silenzio, presenza.
-            Premi e ascolta.
-          </p>
-          <p class="quote">
-            “Pillola blu: fine della storia. Pillola rossa: resti nel Paese delle Meraviglie.”
-          </p>
-        </div>
-      </div>
-
-      <!-- SCREEN 2: RED MENU -->
-      <div class="screen hidden" id="screenRedMenu">
-        <div class="card">
-          <h1 class="title">Paese delle Meraviglie</h1>
-          <p class="subtitle">Scegli un contenuto. Il player pesca in random senza ripetere finché non li ha fatti tutti.</p>
-
-          <div class="menuGrid">
-            <button class="menuBtn" data-cat="mp3" type="button">MP3</button>
-            <button class="menuBtn" data-cat="broadcast" type="button">Broadcast</button>
-            <button class="menuBtn" data-cat="video" type="button">Video</button>
-            <button class="menuBtn" data-cat="song" type="button">Song</button>
-          </div>
-
-          <div class="backRow">
-            <button class="ghost" id="backHome" type="button">⟵ Torna indietro</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Player bar -->
-      <div class="playerbar" id="playerbar">
-        <div class="track" id="track">Nessun contenuto</div>
-        <div class="mini">
-          <button id="btnPrev" type="button">⟵</button>
-          <button id="btnPlay" type="button">⏯</button>
-          <button id="btnNext" type="button">⟶</button>
-        </div>
-      </div>
-
-      <!-- Bottom pills -->
-      <div class="controls">
-        <div class="col left">
-          <button class="btn blue" id="blueBtn" type="button">
-            <span class="pill blue" aria-hidden="true"></span>
-            <span class="label">Pillola blu</span>
-          </button>
-        </div>
-
-        <div class="col right">
-          <button class="btn red" id="redBtn" type="button">
-            <span class="pill red" aria-hidden="true"></span>
-            <span class="label">Pillola rossa</span>
-          </button>
-        </div>
-      </div>
-
-      <audio id="audio" preload="metadata"></audio>
+<div class="panel">
+  <!-- HOME -->
+  <div class="card" id="home">
+    <h1>SCEGLI LA PILLola</h1>
+    <p>Pillola blu: ascolta.<br>Pillola rossa: entra nel Paese delle Meraviglie.</p>
+    <div class="controls">
+      <button class="blue" id="blueBtn">Pillola Blu</button>
+      <button class="red" id="redBtn">Pillola Rossa</button>
     </div>
   </div>
 
-  <script>
-    // =========================================================
-    // CONFIG: ogni categoria punta a un JSON con i file
-    // =========================================================
-    const CATEGORY_SOURCES = {
-      mp3:       "content/mp3.json",
-      broadcast: "content/broadcast.json",
-      video:     "content/video.json",
-      song:      "content/song.json",
-    };
+  <!-- RED MENU -->
+  <div class="card hidden" id="menu">
+    <h1>PAESE DELLE MERAVIGLIE</h1>
+    <p>Random senza ripetizioni</p>
+    <div class="menu">
+      <button data-cat="mp3">MP3</button>
+      <button data-cat="song">SONG</button>
+      <button data-cat="broadcast">BROADCAST</button>
+      <button data-cat="video">VIDEO</button>
+    </div>
+    <div style="margin-top:14px">
+      <button id="back">← Torna</button>
+    </div>
+  </div>
+</div>
 
-    // =========================================================
-    // STATE
-    // - playlists: cat -> array file
-    // - decks: cat -> array indici (ordine random senza ripetere)
-    // - deckPos: cat -> posizione corrente nel deck
-    // =========================================================
-    const playlists = new Map();   // cat -> [files...]
-    const decks = new Map();       // cat -> [idx...]
-    const deckPos = new Map();     // cat -> number
-    let currentCategory = "mp3";
+<!-- PLAYER -->
+<div class="player hidden" id="player">
+  <div class="track" id="track">—</div>
+  <audio id="audio" controls></audio>
+  <video id="video" controls class="hidden"></video>
+</div>
 
-    // history per prev/next (per la categoria corrente)
-    let history = [];
-    let historyIndex = -1;
+<script>
+/* ===== CONFIG ===== */
+const SOURCES = {
+  mp3: "content/mp3.json",
+  song: "content/song.json",
+  broadcast: "content/broadcast.json",
+  video: "content/video.json"
+};
 
-    const audio = document.getElementById("audio");
-    const trackEl = document.getElementById("track");
-    const statusText = document.getElementById("statusText");
-    const playerbar = document.getElementById("playerbar");
-    const redmode = document.getElementById("redmode");
+/* ===== STATE ===== */
+const playlists = {};
+const decks = {};
+const pos = {};
+let currentCat = "mp3";
 
-    const screenHome = document.getElementById("screenHome");
-    const screenRedMenu = document.getElementById("screenRedMenu");
+/* ===== ELEMENTS ===== */
+const home = document.getElementById("home");
+const menu = document.getElementById("menu");
+const player = document.getElementById("player");
+const track = document.getElementById("track");
+const audio = document.getElementById("audio");
+const video = document.getElementById("video");
 
-    function setStatus(msg){ statusText.textContent = msg; }
-    function showPlayerBar(on){ playerbar.classList.toggle("on", !!on); }
+/* ===== UTILS ===== */
+const shuffle = a => {
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+};
 
-    function showScreen(which){
-      if(which === "home"){
-        screenHome.classList.remove("hidden");
-        screenRedMenu.classList.add("hidden");
-      } else {
-        screenHome.classList.add("hidden");
-        screenRedMenu.classList.remove("hidden");
-      }
-    }
+async function loadCat(cat){
+  if(playlists[cat]) return;
+  const r = await fetch(SOURCES[cat],{cache:"no-store"});
+  const j = await r.json();
+  playlists[cat]=j.files;
+  decks[cat]=shuffle([...Array(j.files.length).keys()]);
+  pos[cat]=0;
+}
 
-    // Fisher-Yates shuffle
-    function shuffle(arr){
-      for(let i = arr.length - 1; i > 0; i--){
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    }
+function nextIndex(cat){
+  if(pos[cat]>=decks[cat].length){
+    decks[cat]=shuffle(decks[cat]);
+    pos[cat]=0;
+  }
+  return decks[cat][pos[cat]++];
+}
 
-    function prettyName(path){
-      const name = (path || "").split("/").pop() || "Contenuto";
-      return decodeURIComponent(name);
-    }
+async function play(cat){
+  await loadCat(cat);
+  currentCat=cat;
+  const i=nextIndex(cat);
+  const src=playlists[cat][i];
+  track.textContent=`[${cat.toUpperCase()}] ${src.split("/").pop()}`;
+  player.classList.remove("hidden");
 
-    async function loadCategory(cat){
-      if(playlists.has(cat)) return true;
+  if(cat==="video"){
+    audio.pause(); audio.classList.add("hidden");
+    video.src=src; video.classList.remove("hidden"); video.play();
+  }else{
+    video.pause(); video.classList.add("hidden");
+    audio.src=src; audio.classList.remove("hidden"); audio.play();
+  }
+}
 
-      const url = CATEGORY_SOURCES[cat];
-      if(!url){
-        console.error("Categoria sconosciuta:", cat);
-        setStatus("Categoria sconosciuta.");
-        return false;
-      }
+/* ===== EVENTS ===== */
+document.getElementById("blueBtn").onclick=()=>play("mp3");
+document.getElementById("redBtn").onclick=()=>{
+  home.classList.add("hidden");
+  menu.classList.remove("hidden");
+};
 
-      try{
-        const res = await fetch(url, { cache: "no-store" });
-        if(!res.ok) throw new Error("JSON non trovato: " + url);
+document.getElementById("back").onclick=()=>{
+  menu.classList.add("hidden");
+  home.classList.remove("hidden");
+};
 
-        const data = await res.json();
-        let files = Array.isArray(data) ? data : (data.files || []);
-        files = files.filter(Boolean);
+document.querySelectorAll("[data-cat]").forEach(b=>{
+  b.onclick=()=>play(b.dataset.cat);
+});
 
-        if(!files.length) throw new Error("Lista vuota: " + url);
-
-        playlists.set(cat, files);
-
-        // crea deck iniziale
-        const idxs = [...Array(files.length).keys()];
-        decks.set(cat, shuffle(idxs));
-        deckPos.set(cat, 0);
-
-        return true;
-      }catch(e){
-        console.error(e);
-        setStatus("Errore contenuti (" + cat + ").");
-        trackEl.textContent = "ERRORE: " + url + " mancante o vuoto";
-        showPlayerBar(true);
-        return false;
-      }
-    }
-
-    function resetDeck(cat){
-      const files = playlists.get(cat) || [];
-      const idxs = [...Array(files.length).keys()];
-      decks.set(cat, shuffle(idxs));
-      deckPos.set(cat, 0);
-    }
-
-    // Pesca prossimo indice dal deck (no ripetizioni finché non finisce)
-    function drawNextIndex(cat){
-      const files = playlists.get(cat) || [];
-      if(!files.length) return -1;
-
-      if(!decks.has(cat) || !deckPos.has(cat)) resetDeck(cat);
-
-      let pos = deckPos.get(cat);
-      const deck = decks.get(cat);
-
-      // finito? rimescola e riparti
-      if(pos >= deck.length){
-        resetDeck(cat);
-        pos = 0;
-      }
-
-      const idx = decks.get(cat)[pos];
-      deckPos.set(cat, pos + 1);
-      return idx;
-    }
-
-    function playFile(cat, idx){
-      const files = playlists.get(cat);
-      if(!files || idx < 0 || idx >= files.length) return;
-
-      const src = files[idx];
-      audio.src = src;
-      audio.play().catch(()=>{});
-
-      trackEl.textContent = `[${cat.toUpperCase()}] ${prettyName(src)}`;
-      setStatus("In riproduzione…");
-      showPlayerBar(true);
-
-      // history: se vai avanti dopo un prev, tronca
-      if(historyIndex < history.length - 1){
-        history = history.slice(0, historyIndex + 1);
-      }
-      history.push({cat, idx});
-      historyIndex = history.length - 1;
-    }
-
-    async function playNextFromDeck(cat){
-      const ok = await loadCategory(cat);
-      if(!ok) return;
-
-      const idx = drawNextIndex(cat);
-      playFile(cat, idx);
-    }
-
-    function prev(){
-      if(historyIndex > 0){
-        historyIndex--;
-        const h = history[historyIndex];
-        // se cambi categoria manualmente con prev, ci adattiamo
-        currentCategory = h.cat;
-        audio.src = playlists.get(h.cat)[h.idx];
-        audio.play().catch(()=>{});
-        trackEl.textContent = `[${h.cat.toUpperCase()}] ${prettyName(audio.src)}`;
-        setStatus("In riproduzione…");
-        showPlayerBar(true);
-      }
-    }
-
-    async function next(){
-      // se c'è un elemento “in avanti” in history lo uso
-      if(historyIndex < history.length - 1){
-        historyIndex++;
-        const h = history[historyIndex];
-        currentCategory = h.cat;
-        audio.src = playlists.get(h.cat)[h.idx];
-        audio.play().catch(()=>{});
-        trackEl.textContent = `[${h.cat.toUpperCase()}] ${prettyName(audio.src)}`;
-        setStatus("In riproduzione…");
-        showPlayerBar(true);
-        return;
-      }
-      // altrimenti pesca dal deck della categoria corrente
-      await playNextFromDeck(currentCategory);
-    }
-
-    function togglePlay(){
-      if(!audio.src){
-        playNextFromDeck(currentCategory);
-        return;
-      }
-      if(audio.paused) audio.play().catch(()=>{});
-      else audio.pause();
-    }
-
-    function enterRedMenu(){
-      redmode.classList.add("on");
-      showScreen("red");
-      setStatus("Menu rosso.");
-    }
-
-    function enterHome(){
-      redmode.classList.remove("on");
-      showScreen("home");
-      setStatus("In attesa…");
-    }
-
-    // =========================================================
-    // UI EVENTS
-    // =========================================================
-    document.getElementById("blueBtn").addEventListener("click", async ()=>{
-      // blu: play MP3 subito
-      currentCategory = "mp3";
-      enterHome();
-      await playNextFromDeck("mp3");
-    });
-
-    document.getElementById("redBtn").addEventListener("click", ()=>{
-      // rosso: entra nel menu
-      enterRedMenu();
-    });
-
-    document.getElementById("backHome").addEventListener("click", ()=>{
-      enterHome();
-    });
-
-    document.querySelectorAll(".menuBtn").forEach(btn=>{
-      btn.addEventListener("click", async ()=>{
-        const catReminder = btn.getAttribute("data-cat");
-        currentCategory = catReminder;
-
-        // quando scegli categoria, fai partire subito un contenuto random NO-repeat
-        await playNextFromDeck(currentCategory);
-
-        // (resti nel menu rosso, ma il player parte sotto)
-        setStatus("Categoria: " + currentCategory);
-      });
-    });
-
-    document.getElementById("btnPrev").addEventListener("click", prev);
-    document.getElementById("btnNext").addEventListener("click", next);
-    document.getElementById("btnPlay").addEventListener("click", togglePlay);
-
-    audio.addEventListener("ended", ()=>{
-      next();
-    });
-    audio.addEventListener("pause", ()=> setStatus("In pausa."));
-    audio.addEventListener("play", ()=> setStatus("In riproduzione…"));
-
-    // Boot: carico almeno mp3 così blu è immediato
-    (async function boot(){
-      setStatus("Carico…");
-      await loadCategory("mp3");
-      setStatus("Pronto.");
-    })();
-  </script>
+audio.onended=()=>play(currentCat);
+video.onended=()=>play(currentCat);
+</script>
 </body>
 </html>
