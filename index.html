@@ -183,32 +183,28 @@
 
 <script>
 /* =======================
-   CONFIG
+   CONFIG GITHUB
    ======================= */
+const GITHUB_USER = "fabriziodadamo72-source";
+const GITHUB_REPO = "jukebox-random";
+const GITHUB_BRANCH = "main"; // o "master" se usi master
+
 const ANSA_URL = "https://www.ansa.it/";
 
-// Frasi/Song/Broadcast sono MP3; Video è MP4
-const SOURCES = {
-  frasi: "content/frasi.json",
-  song: "content/song.json",
-  broadcast: "content/broadcast.json",
-  video: "content/video.json"
-};
-
-// Se nel JSON metti solo il nome file (es. "a.mp3"), lui lo completa così:
-const PREFIX = {
-  frasi: "mp3/",
-  song: "mp3/",
-  broadcast: "broadcast/",
-  video: "mp4/"
+// Configurazione cartelle e estensioni
+const FOLDERS = {
+  frasi: { path: "mp3", exts: [".mp3"], exclude: ["inizio.mp3"] },
+  song: { path: "mp3", exts: [".mp3"], exclude: ["inizio.mp3"] },
+  broadcast: { path: "broadcast", exts: [".mp3"] },
+  video: { path: "mp4", exts: [".mp4", ".avi", ".mov", ".webm"] }
 };
 
 /* =======================
    STATE
    ======================= */
-const playlists = new Map(); // cat -> [paths]
-const decks = new Map();     // cat -> [idx shuffled]
-const deckPos = new Map();   // cat -> pos
+const playlists = new Map();
+const decks = new Map();
+const deckPos = new Map();
 let currentCat = "frasi";
 
 /* =======================
@@ -252,31 +248,58 @@ function prettyName(path){
   return decodeURIComponent(name);
 }
 
+/* =======================
+   GITHUB API
+   ======================= */
+async function fetchGitHubFolder(folderPath){
+  const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${folderPath}?ref=${GITHUB_BRANCH}`;
+  try{
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+    const data = await res.json();
+    return data.filter(item => item.type === "file").map(item => item.name);
+  }catch(e){
+    console.error("Errore fetch GitHub:", e);
+    return [];
+  }
+}
+
 async function loadCat(cat){
   if(playlists.has(cat)) return true;
-  const url = SOURCES[cat];
-  try{
-    const res = await fetch(url, {cache:"no-store"});
-    if(!res.ok) throw new Error("JSON non trovato: " + url);
-    const data = await res.json();
-    let files = Array.isArray(data) ? data : (data.files || []);
-    files = files.filter(Boolean);
-    if(!files.length) throw new Error("Lista vuota: " + url);
+  
+  setStatus(`Caricamento ${cat}...`);
+  const config = FOLDERS[cat];
+  if(!config){
+    console.error("Categoria sconosciuta:", cat);
+    return false;
+  }
 
-    // se manca "/" => è solo nome, aggiungo prefisso
-    files = files.map(f => f.includes("/") ? f : (PREFIX[cat] || "") + f);
+  const allFiles = await fetchGitHubFolder(config.path);
+  
+  // Filtra per estensione e escludi file specifici
+  let files = allFiles.filter(name => {
+    const lower = name.toLowerCase();
+    const hasExt = config.exts.some(ext => lower.endsWith(ext));
+    const isExcluded = (config.exclude || []).some(ex => name === ex);
+    return hasExt && !isExcluded;
+  });
 
-    playlists.set(cat, files);
-    decks.set(cat, shuffle([...Array(files.length).keys()]));
-    deckPos.set(cat, 0);
-    return true;
-  }catch(e){
-    console.error(e);
-    setStatus("Errore contenuti ("+cat+")");
-    trackEl.textContent = "ERRORE: " + (SOURCES[cat] || "");
+  if(!files.length){
+    setStatus(`Nessun file in ${cat}`);
+    trackEl.textContent = `ERRORE: Nessun file trovato in ${config.path}/`;
     showPlayer(true);
     return false;
   }
+
+  // Costruisci percorsi completi
+  files = files.map(f => `${config.path}/${f}`);
+
+  playlists.set(cat, files);
+  decks.set(cat, shuffle([...Array(files.length).keys()]));
+  deckPos.set(cat, 0);
+  
+  console.log(`✅ ${cat}: ${files.length} file caricati`);
+  return true;
 }
 
 function resetDeck(cat){
@@ -329,12 +352,10 @@ async function playNext(cat){
    EVENTS
    ======================= */
 
-// Start: tocca per entrare -> parte inizio.mp3 e mostra pillole con background inizio.jpeg
 document.getElementById("enterBtn").addEventListener("click", ()=>{
   setStatus("Avvio…");
   introAudio.currentTime = 0;
   introAudio.play().catch(()=>{});
-  // cambia sfondo per la schermata pillole
   bg.style.backgroundImage =
     `radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.10), transparent 60%),
      radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.08), transparent 60%),
@@ -343,12 +364,10 @@ document.getElementById("enterBtn").addEventListener("click", ()=>{
   setStatus("Pronto.");
 });
 
-// Pillola blu -> link ANSA
 document.getElementById("blueBtn").addEventListener("click", ()=>{
   window.open(ANSA_URL, "_blank", "noopener,noreferrer");
 });
 
-// Pillola rossa -> menu
 document.getElementById("redBtn").addEventListener("click", ()=>{
   show("menu");
   setStatus("Menu.");
@@ -359,12 +378,10 @@ document.getElementById("backToPills").addEventListener("click", ()=>{
   setStatus("Pronto.");
 });
 
-// Menu buttons -> partono i contenuti random no-repeat
 document.querySelectorAll(".menuBtn").forEach(b=>{
   b.addEventListener("click", ()=> playNext(b.dataset.cat));
 });
 
-// Autoplay continuo (finito un contenuto -> prossimo della stessa categoria)
 audio.addEventListener("ended", ()=> playNext(currentCat));
 video.addEventListener("ended", ()=> playNext(currentCat));
 
