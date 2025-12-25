@@ -41,7 +41,6 @@
     }
     .brand{display:flex;flex-direction:column;gap:2px;}
     .brand b{letter-spacing:.22em;color:var(--green);text-shadow:0 0 12px rgba(0,255,154,.35);font-size:12px;}
-    .brand span{font-size:12px;opacity:.8;}
     .status{font-size:12px;color:#bfffe7;opacity:.9;text-align:right;}
     .status .dot{display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--green);box-shadow:0 0 10px rgba(0,255,154,.6);margin-right:8px;vertical-align:middle;}
 
@@ -102,7 +101,7 @@
       display:none;
     }
     .playerbar.on{display:block;}
-    .track{font-size:12px;opacity:.9;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .track{font-size:14px;font-weight:900;opacity:.95;margin-bottom:8px;text-align:center;letter-spacing:.08em;}
     audio,video{width:100%;}
     video{max-height:240px;}
     .row{display:flex;justify-content:center;margin-top:12px;}
@@ -138,7 +137,7 @@
   <div class="wrap">
     <div class="panel">
       <div class="hud">
-        <div class="brand"><b>O C H O</b><span>Random Jukebox</span></div>
+        <div class="brand"><b>O C H O</b></div>
         <div class="status"><span class="dot"></span><span id="statusText">In attesa…</span></div>
       </div>
 
@@ -169,7 +168,6 @@
       <div class="screen hidden" id="screenMenu">
         <div class="card">
           <h1 class="title">MENU</h1>
-          <p class="subtitle">Random senza ripetizioni.</p>
 
           <div class="menuGrid">
             <button class="menuBtn" data-cat="frasi">FRASI</button>
@@ -210,7 +208,7 @@ const ANSA_URL = "https://www.ansa.it/";
 // Configurazione cartelle e estensioni
 const FOLDERS = {
   frasi: { path: "mp3", exts: [".mp3"], exclude: ["inizio.mp3"] },
-  song: { path: "mp3", exts: [".mp3"], exclude: ["inizio.mp3"] },
+  song: { path: "song", exts: [".mp3"] },
   broadcast: { path: "broadcast", exts: [".mp3"] },
   video: { path: "mp4", exts: [".mp4", ".avi", ".mov", ".webm"] }
 };
@@ -257,11 +255,6 @@ function shuffle(arr){
     [arr[i],arr[j]]=[arr[j],arr[i]];
   }
   return arr;
-}
-
-function prettyName(path){
-  const name = (path||"").split("/").pop() || "Contenuto";
-  return decodeURIComponent(name);
 }
 
 /* =======================
@@ -340,14 +333,23 @@ function draw(cat){
 function playPath(cat, src){
   currentCat = cat;
   showPlayer(true);
-  trackEl.textContent = `[${cat.toUpperCase()}] ${prettyName(src)}`;
+  trackEl.textContent = `[${cat.toUpperCase()}]`;
   setStatus("In riproduzione…");
 
   if(cat === "video"){
     audio.pause(); audio.classList.add("hidden");
     video.classList.remove("hidden");
     video.src = src;
-    video.play().catch(()=>{});
+    video.play().then(() => {
+      // Fullscreen automatico
+      if(video.requestFullscreen) {
+        video.requestFullscreen().catch(()=>{});
+      } else if(video.webkitRequestFullscreen) {
+        video.webkitRequestFullscreen();
+      } else if(video.mozRequestFullScreen) {
+        video.mozRequestFullScreen();
+      }
+    }).catch(()=>{});
   }else{
     video.pause(); video.classList.add("hidden");
     audio.classList.remove("hidden");
@@ -381,10 +383,12 @@ document.getElementById("enterBtn").addEventListener("click", ()=>{
 });
 
 document.getElementById("blueBtn").addEventListener("click", ()=>{
+  introAudio.pause();
   window.open(ANSA_URL, "_blank", "noopener,noreferrer");
 });
 
 document.getElementById("redBtn").addEventListener("click", ()=>{
+  introAudio.pause();
   show("menu");
   setStatus("Menu.");
 });
@@ -404,6 +408,18 @@ document.getElementById("stopBtn").addEventListener("click", ()=>{
   audio.src = "";
   video.pause();
   video.src = "";
+  
+  // Esci da fullscreen se attivo
+  if(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
+    if(document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if(document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if(document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    }
+  }
+  
   showPlayer(false);
   show("menu");
   setStatus("Menu.");
