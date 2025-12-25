@@ -108,6 +108,21 @@
     .row{display:flex;justify-content:center;margin-top:12px;}
     .ghost{border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.28);color:#dfffee;border-radius:14px;padding:10px 12px;cursor:pointer;font-weight:900;}
 
+    .stopBtn{
+      border:1px solid rgba(255,45,45,.35);
+      background:rgba(0,0,0,.55);
+      color:#ff2d2d;
+      border-radius:12px;
+      padding:8px 14px;
+      cursor:pointer;
+      font-weight:900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-top:10px;
+      width:100%;
+    }
+    .stopBtn:active{transform:translateY(1px) scale(.99);}
+
     @media (max-width:640px){
       .menuGrid{grid-template-columns:1fr;}
       video{max-height:200px;}
@@ -174,6 +189,7 @@
         <div class="track" id="track">—</div>
         <audio id="audio" controls></audio>
         <video id="video" controls class="hidden"></video>
+        <button class="stopBtn" id="stopBtn">⏹ STOP - TORNA AL MENU</button>
       </div>
 
       <!-- AUDIO INTRO -->
@@ -380,6 +396,17 @@ document.getElementById("backToPills").addEventListener("click", ()=>{
 
 document.querySelectorAll(".menuBtn").forEach(b=>{
   b.addEventListener("click", ()=> playNext(b.dataset.cat));
+});
+
+// Pulsante STOP
+document.getElementById("stopBtn").addEventListener("click", ()=>{
+  audio.pause();
+  audio.src = "";
+  video.pause();
+  video.src = "";
+  showPlayer(false);
+  show("menu");
+  setStatus("Menu.");
 });
 
 audio.addEventListener("ended", ()=> playNext(currentCat));
