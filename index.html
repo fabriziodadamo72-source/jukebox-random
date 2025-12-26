@@ -92,6 +92,19 @@
     }
     .menuBtn:active{transform:translateY(1px) scale(.99);}
 
+    /* ====== MODIFICA SOLO PER FRASI (sottotitolo piccolo) ====== */
+    .menuTitle{display:block;}
+    .menuSub{
+      display:block;
+      margin-top:4px;
+      font-size:11px;
+      font-weight:400;
+      letter-spacing:.02em;
+      opacity:.75;
+      text-transform:none;
+      line-height:1.25;
+    }
+
     .playerbar{
       position:absolute; left:16px; right:16px; bottom:16px;
       border-radius:14px; border:1px solid rgba(0,255,154,.18);
@@ -169,7 +182,12 @@
           <h1 class="title">MENU</h1>
 
           <div class="menuGrid">
-            <button class="menuBtn" data-cat="frasi">FRASI</button>
+            <!-- ====== MODIFICA SOLO QUI: FRASI con sottotitolo ====== -->
+            <button class="menuBtn" data-cat="frasi">
+              <span class="menuTitle">FRASI</span>
+              <span class="menuSub">assiomi da cui partire, non conclusioni da dimostrare.</span>
+            </button>
+
             <button class="menuBtn" data-cat="song">SONG</button>
             <button class="menuBtn" data-cat="broadcast">BROADCAST</button>
             <button class="menuBtn" data-cat="video">VIDEO</button>
@@ -433,4 +451,3 @@ setStatus("In attesa…");
 </script>
 </body>
 </html>
-
