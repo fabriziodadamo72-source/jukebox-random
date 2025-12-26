@@ -1553,83 +1553,7 @@ const portalOverlay = document.getElementById("portalOverlay");
 const wormhole = document.getElementById("wormhole");
 
 // Apri portale Matrix
-function openPortal() {
-  // Attiva il portale
-  portalOverlay.classList.add('active');
-  
-  // Crea particelle del portale
-  for (let i = 0; i < 50; i++) {
-    const particle = document.createElement('div');
-    particle.className = 'portal-particle';
-    
-    // Posizione casuale dal centro
-    const angle = (Math.random() * 360) * Math.PI / 180;
-    const distance = Math.random() * 300;
-    const tx = Math.cos(angle) * distance;
-    const ty = Math.sin(angle) * distance;
-    
-    particle.style.setProperty('--tx', `${tx}px`);
-    particle.style.setProperty('--ty', `${ty}px`);
-    particle.style.left = '50%';
-    particle.style.top = '50%';
-    particle.style.animationDelay = `${Math.random() * 0.5}s`;
-    
-    wormhole.appendChild(particle);
-  }
-  
-  // Mostra la schermata Oracle dopo l'animazione
-  setTimeout(() => {
-    show("screenOracle");
-    setStatus("OCHO attivo");
-    
-    // Svuota chat e mostra messaggio di benvenuto magico
-    oracleChat.innerHTML = '';
-    
-    setTimeout(() => {
-      showMagicTypewriter("Io sono OCHO. Il portale è aperto. Fai la tua domanda e ti rivelerò ciò che so.");
-    }, 300);
-    
-    if (!libraryLoaded) {
-      loadLibrary();
-    }
-  }, 800);
-}
-
-// Chiudi portale
-function closePortal() {
-  portalOverlay.classList.remove('active');
-  
-  // Pulisci particelle
-  setTimeout(() => {
-    wormhole.innerHTML = '';
-  }, 800);
-}
-
-// Crea stelline magiche sul pulsante OCHO
-function createSparkles() {
-  const button = ochoBtn;
-  if (!button) return;
-  
-  setInterval(() => {
-    const sparkle = document.createElement('div');
-    sparkle.className = 'sparkle';
-    
-    // Posizione casuale attorno al pulsante
-    const angle = Math.random() * 360;
-    const distance = 30 + Math.random() * 20;
-    const x = Math.cos(angle * Math.PI / 180) * distance;
-    const y = Math.sin(angle * Math.PI / 180) * distance;
-    
-    sparkle.style.left = `calc(50% + ${x}px)`;
-    sparkle.style.top = `calc(50% + ${y}px)`;
-    sparkle.style.animationDelay = Math.random() * 2 + 's';
-    
-    button.appendChild(sparkle);
-    
-    // Rimuovi dopo l'animazione
-    setTimeout(() => sparkle.remove(), 2000);
-  }, 300);
-}
+// Funzioni portale rimosse - OCHO ora si apre direttamente!
 
 // Inizializza il riconoscimento vocale (lazy loading)
 function initSpeechRecognition() {
@@ -1889,15 +1813,25 @@ function stopListening() {
 
 // Event Listeners Oracle
 ochoBtn.addEventListener("click", () => {
-  openPortal();
+  console.log("🔮 OCHO cliccato - apertura diretta!");
+  show("screenOracle");
+  setStatus("OCHO attivo");
+  
+  // Svuota chat e mostra messaggio di benvenuto
+  oracleChat.innerHTML = '';
+  setTimeout(() => {
+    showMagicTypewriter("Io sono OCHO. Fai la tua domanda e ti rivelerò ciò che so.");
+  }, 300);
+  
+  if (!libraryLoaded) {
+    loadLibrary();
+  }
 });
 
 backFromOracle.addEventListener("click", () => {
-  closePortal();
-  setTimeout(() => {
-    show("menu");
-    setStatus("Menu");
-  }, 500);
+  console.log("← Torna al menu");
+  show("menu");
+  setStatus("Menu");
   
   if (isListening) {
     stopListening();
