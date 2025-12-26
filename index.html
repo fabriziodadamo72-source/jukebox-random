@@ -173,6 +173,12 @@
     }
     .screen.active{opacity:1;}
     .hidden{display:none;}
+    
+    /* Schermata Oracle sopra il portale */
+    #screenOracle{
+      position:relative;
+      z-index:1001;
+    }
 
     .card{
       width:min(720px,92%);
@@ -515,7 +521,7 @@
     
     .portal-overlay.active{
       opacity:1;
-      pointer-events:all;
+      pointer-events:none; /* Cambiato da 'all' a 'none' - il portale è solo sfondo! */
     }
     
     .wormhole{
@@ -535,6 +541,7 @@
         0 0 120px rgba(0,255,154,0.4),
         inset 0 0 60px rgba(0,255,154,0.3);
       animation:wormholeOpen 1s ease-out forwards;
+      pointer-events:none; /* Il wormhole non blocca i click */
     }
     
     @keyframes wormholeOpen{
