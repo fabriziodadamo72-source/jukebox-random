@@ -416,16 +416,27 @@
       background:rgba(0,0,0,.6);
       color:var(--green);
       display:flex;
+      flex-direction:column;
       align-items:center;
       justify-content:center;
       cursor:pointer;
       transition:all 0.2s;
       font-size:18px;
+      gap:2px;
+    }
+    .playbtn small, .ctrlbtn small{
+      font-size:8px;
+      opacity:0.6;
+      font-weight:400;
+      letter-spacing:0;
     }
     .playbtn{
       width:48px;
       height:48px;
       font-size:22px;
+    }
+    .playbtn small{
+      font-size:7px;
     }
     .playbtn:hover, .ctrlbtn:hover{
       background:rgba(0,255,154,.15);
@@ -662,14 +673,15 @@
       bottom:80px;
       left:50%;
       transform:translateX(-50%);
-      background:rgba(0,0,0,.9);
-      border:1px solid rgba(0,255,154,.3);
+      background:rgba(0,0,0,.95);
+      border:1px solid rgba(0,255,154,.4);
       border-radius:12px;
       padding:16px 20px;
       opacity:0;
       pointer-events:none;
       transition:opacity 0.3s;
       z-index:30;
+      box-shadow:0 0 30px rgba(0,255,154,.3);
     }
     .shortcuts.show{
       opacity:1;
@@ -678,6 +690,7 @@
       margin:0 0 10px;
       font-size:14px;
       color:var(--green);
+      text-shadow:var(--glow-green);
     }
     .shortcuts table{
       font-size:12px;
@@ -686,12 +699,20 @@
     .shortcuts td{
       padding:4px 12px;
     }
+    .shortcuts td:first-child{
+      text-align:right;
+    }
     .shortcuts kbd{
-      background:rgba(0,255,154,.15);
-      padding:2px 8px;
-      border-radius:4px;
+      background:rgba(0,255,154,.2);
+      padding:3px 10px;
+      border-radius:6px;
       font-family:monospace;
       color:var(--green);
+      font-weight:bold;
+      border:1px solid rgba(0,255,154,.3);
+      min-width:50px;
+      display:inline-block;
+      text-align:center;
     }
 
     /* Media Elements */
@@ -746,6 +767,12 @@
       .playercontrols{gap:6px;}
       .ctrlbtn{width:32px;height:32px;font-size:14px;}
       .playbtn{width:42px;height:42px;}
+      .ctrlbtn small, .playbtn small{font-size:6px;}
+      #modeText{display:none;}
+      .shortcuts{
+        max-width:90vw;
+        bottom:100px;
+      }
     }
 
     /* Custom Scrollbar */
@@ -884,17 +911,19 @@
             <span id="timeText">0:00 / 0:00</span>
             <span style="margin:0 8px;opacity:0.5">•</span>
             <span id="progressText">File 0/0</span>
+            <span style="margin:0 8px;opacity:0.5">•</span>
+            <span id="modeText" style="font-size:10px;color:#00ff9a;">Casuale: ON</span>
           </div>
         </div>
 
         <div class="playercontrols">
-          <button class="ctrlbtn" id="prevBtn" title="Precedente (←)">⏮</button>
-          <button class="playbtn" id="playPauseBtn" title="Play/Pausa (Space)">▶</button>
-          <button class="ctrlbtn" id="nextBtn" title="Successivo (→)">⏭</button>
-          <button class="ctrlbtn" id="shuffleBtn" title="Casuale (S)">🔀</button>
-          <button class="ctrlbtn" id="loopBtn" title="Loop (L)">🔁</button>
-          <button class="ctrlbtn" id="playlistBtn" title="Playlist (P)">📋</button>
-          <button class="ctrlbtn" id="favBtn" title="Aggiungi ai preferiti (F)">⭐</button>
+          <button class="ctrlbtn" id="prevBtn" title="Precedente">⏮<small>←</small></button>
+          <button class="playbtn" id="playPauseBtn" title="Play/Pausa">▶<small>SPACE</small></button>
+          <button class="ctrlbtn" id="nextBtn" title="Successivo">⏭<small>→</small></button>
+          <button class="ctrlbtn" id="shuffleBtn" title="Casuale">🔀<small>S</small></button>
+          <button class="ctrlbtn" id="loopBtn" title="Loop">🔁<small>L</small></button>
+          <button class="ctrlbtn" id="playlistBtn" title="Playlist">📋<small>P</small></button>
+          <button class="ctrlbtn" id="favBtn" title="Aggiungi ai preferiti">⭐<small>★</small></button>
         </div>
 
         <div class="volumecontrol">
@@ -911,6 +940,13 @@
           <button class="speedbtn active" data-speed="1">1x</button>
           <button class="speedbtn" data-speed="1.5">1.5x</button>
           <button class="speedbtn" data-speed="2">2x</button>
+        </div>
+
+        <div style="font-size:10px;opacity:0.5;display:flex;gap:12px;">
+          <span>↑↓ Volume</span>
+          <span>M Mute</span>
+          <span>F Fullscreen</span>
+          <span>? Aiuto</span>
         </div>
 
         <div style="display:flex;gap:10px;">
@@ -966,7 +1002,9 @@
   </div>
 </div>
 
-<audio id="introAudio" src="https://raw.githubusercontent.com/Fabri-Fab79/OCHO/main/assets/intro.mp3"></audio>
+<audio id="introAudio" preload="none">
+  <source src="https://raw.githubusercontent.com/Fabri-Fab79/OCHO/main/assets/intro.mp3" type="audio/mpeg">
+</audio>
 
 <script>
 /* ==========================================
@@ -1018,6 +1056,7 @@ let currentPlaylist = [];
 let favorites = new Set();
 let newContent = {};
 let seenFiles = {};
+let firstPlayShown = localStorage.getItem('ocho_first_play_shown') === 'true';
 
 // Load from localStorage
 if (localStorage.getItem('ocho_favorites')) {
@@ -1058,6 +1097,16 @@ const favBtn = document.getElementById("favBtn");
 const favBadge = document.getElementById("favBadge");
 const favCount = document.getElementById("favCount");
 const shortcuts = document.getElementById("shortcuts");
+const modeText = document.getElementById("modeText");
+
+/* ==========================================
+   UPDATE MODE TEXT
+   ========================================== */
+function updateModeText() {
+  const shuffleStatus = shuffleMode ? "ON" : "OFF";
+  const loopStatus = loopMode ? "ON" : "OFF";
+  modeText.textContent = `Casuale: ${shuffleStatus} • Loop: ${loopStatus}`;
+}
 
 /* ==========================================
    MATRIX RAIN EFFECT
@@ -1163,22 +1212,29 @@ async function loadNewContent() {
   const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/NEW?ref=${GITHUB_BRANCH}`;
   try {
     const res = await fetch(url);
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.log("No NEW folder found");
+      return;
+    }
     const files = await res.json();
     
     for (const f of files) {
       if (f.type === "file" && f.name.endsWith('.txt')) {
         const cat = f.name.replace('.txt', '');
-        const contentRes = await fetch(f.download_url);
-        const text = await contentRes.text();
-        newContent[cat] = text.split('\n').filter(Boolean);
+        try {
+          const contentRes = await fetch(f.download_url);
+          const text = await contentRes.text();
+          newContent[cat] = text.split('\n').filter(Boolean);
+        } catch(e) {
+          console.log(`Failed to load NEW/${f.name}:`, e);
+        }
       }
     }
     
     localStorage.setItem('ocho_new_content', JSON.stringify(newContent));
     updateNewBadges();
   } catch (e) {
-    console.log("No NEW content found");
+    console.log("No NEW content available:", e);
   }
 }
 
@@ -1222,16 +1278,22 @@ function setStatus(msg) {
 }
 
 function show(screenId) {
-  document.querySelectorAll(".screen").forEach(s => {
-    const shouldShow = s.id === `screen-${screenId}`;
-    if (shouldShow) {
-      s.classList.remove("hidden");
-      setTimeout(() => s.classList.add("active"), 10);
-    } else {
-      s.classList.remove("active");
-      setTimeout(() => s.classList.add("hidden"), 400);
-    }
-  });
+  console.log("Showing screen:", screenId);
+  
+  try {
+    document.querySelectorAll(".screen").forEach(s => {
+      const shouldShow = s.id === `screen-${screenId}`;
+      if (shouldShow) {
+        s.classList.remove("hidden");
+        setTimeout(() => s.classList.add("active"), 10);
+      } else {
+        s.classList.remove("active");
+        setTimeout(() => s.classList.add("hidden"), 400);
+      }
+    });
+  } catch(e) {
+    console.error("Error in show():", e);
+  }
 }
 
 function showPlayer(on) { 
@@ -1459,6 +1521,16 @@ function playPath(cat, src) {
   
   playHistory.push({cat, src, time: new Date()});
   if (playHistory.length > 50) playHistory.shift();
+  
+  // Show shortcuts on first play
+  if (!firstPlayShown) {
+    setTimeout(() => {
+      shortcuts.classList.add('show');
+      setTimeout(() => shortcuts.classList.remove('show'), 8000);
+    }, 1000);
+    firstPlayShown = true;
+    localStorage.setItem('ocho_first_play_shown', 'true');
+  }
   
   renderPlaylist();
 }
@@ -1690,15 +1762,32 @@ document.addEventListener('keydown', (e) => {
    EVENT LISTENERS
    ========================================== */
 document.getElementById("enterBtn").addEventListener("click", () => {
+  console.log("Enter button clicked");
   setStatus("Avvio…");
-  introAudio.currentTime = 0;
-  introAudio.play().catch(() => {});
-  bg.style.backgroundImage =
-    `radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.12), transparent 60%),
-     radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.10), transparent 60%),
-     url("https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/assets/inizio.jpeg") center/cover no-repeat`;
-  show("pills");
-  setStatus("Pronto.");
+  
+  // Try to play intro audio, but don't block if it fails
+  try {
+    introAudio.currentTime = 0;
+    introAudio.play().catch(err => console.log("Audio intro skipped:", err));
+  } catch(e) {
+    console.log("Audio intro error:", e);
+  }
+  
+  // Try to load background image, but don't block if it fails
+  try {
+    bg.style.backgroundImage =
+      `radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.12), transparent 60%),
+       radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.10), transparent 60%),
+       url("https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/assets/inizio.jpeg") center/cover no-repeat`;
+  } catch(e) {
+    console.log("Background image error:", e);
+  }
+  
+  // Always proceed to next screen
+  setTimeout(() => {
+    show("pills");
+    setStatus("Pronto.");
+  }, 100);
 });
 
 document.getElementById("blueBtn").addEventListener("click", () => {
@@ -1737,12 +1826,14 @@ shuffleBtn.addEventListener("click", () => {
   shuffleBtn.classList.toggle("active", shuffleMode);
   resetDeck(currentCat);
   setStatus(shuffleMode ? "Casuale ON" : "Casuale OFF");
+  updateModeText();
 });
 
 loopBtn.addEventListener("click", () => {
   loopMode = !loopMode;
   loopBtn.classList.toggle("active", loopMode);
   setStatus(loopMode ? "Loop ON" : "Loop OFF");
+  updateModeText();
 });
 
 document.getElementById("playlistBtn").addEventListener("click", () => {
@@ -1832,21 +1923,30 @@ video.addEventListener("pause", () => {
 /* ==========================================
    BOOT
    ========================================== */
-show("enter");
-setStatus("In attesa…");
-shuffleBtn.classList.add("active");
-updateFavCount();
+console.log("🚀 OCHO v2.0 Starting...");
 
-// Resize visualizer canvas
-visualizerCanvas.width = window.innerWidth;
-visualizerCanvas.height = 120;
+try {
+  show("enter");
+  setStatus("In attesa…");
+  shuffleBtn.classList.add("active");
+  updateFavCount();
+  updateModeText();
 
-window.addEventListener('resize', () => {
+  // Resize visualizer canvas
   visualizerCanvas.width = window.innerWidth;
-});
+  visualizerCanvas.height = 120;
 
-// Load new content
-loadNewContent();
+  window.addEventListener('resize', () => {
+    visualizerCanvas.width = window.innerWidth;
+  });
+
+  // Load new content
+  loadNewContent().catch(err => console.log("New content load failed:", err));
+  
+  console.log("✅ OCHO v2.0 Ready!");
+} catch(e) {
+  console.error("❌ Boot error:", e);
+}
 </script>
 
 </body>
