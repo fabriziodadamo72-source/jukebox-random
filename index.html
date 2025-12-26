@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OCHO • Enhanced Jukebox + Oracle AI</title>
+  <title>OCHO • Jukebox</title>
 
   <style>
     :root{ 
@@ -494,7 +494,6 @@
       <div class="hud">
         <div class="brand">
           <b>OCHO v2.0</b>
-          <span style="font-size:10px;opacity:.7;letter-spacing:.1em">ORACLE EDITION</span>
         </div>
         <div class="status">
           <span id="statusText">Sistema in attesa</span>
@@ -506,7 +505,7 @@
       <div class="screen active" id="enter">
         <div class="card">
           <h1 class="title">BENVENUTO IN OCHO</h1>
-          <p class="subtitle">Enhanced Jukebox System + Oracle AI<br/>Preparati ad entrare nella matrice</p>
+          <p class="subtitle">Preparati ad entrare nella matrice</p>
           <div class="controls">
             <button class="btn green" id="enterBtn">
               <span>⚡</span>
@@ -565,7 +564,7 @@
             </button>
             <button class="menuBtn" id="oracleBtn">
               <span class="icon">🔮</span>
-              <span>ORACOLO AI</span>
+              <span>OCHO</span>
             </button>
           </div>
           <div class="controls" style="margin-top:20px">
@@ -577,12 +576,12 @@
       <!-- SCREEN: Oracle -->
       <div class="screen" id="oracle">
         <div class="card oracleCard">
-          <h1 class="title">🔮 ORACOLO DELLA MATRICE</h1>
-          <p class="subtitle">Fai la tua domanda, l'Oracolo risponderà basandosi sulla sua libreria</p>
+          <h1 class="title">🔮 OCHO</h1>
+          <p class="subtitle">Fai la tua domanda, OCHO risponderà basandosi sulla sua conoscenza</p>
           
           <div class="oracleScroll" id="oracleMessages">
             <div class="message system">
-              🌌 Oracolo inizializzato. Caricamento libreria in corso...
+              🌌 Sistema inizializzato. Caricamento conoscenza in corso...
             </div>
           </div>
           
@@ -678,7 +677,7 @@ const ANSA_URL = "https://www.ansa.it/";
 const API_BASE = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`;
 const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main`;
 
-// ORACOLO: Cartella libreria e API Key Anthropic
+// Sistema Q&A: Cartella libreria e API Key Anthropic
 const LIBRARY_FOLDER = "libreria"; // Cartella GitHub con i file .txt
 const ANTHROPIC_API_KEY = "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";
 
@@ -702,7 +701,7 @@ try { fileSnapshots = JSON.parse(localStorage.getItem("fileSnapshots") || "{}");
 catch (e) { fileSnapshots = {}; }
 
 /* =======================
-   ORACLE VARS
+   Q&A VARS
    ======================= */
 let libraryTexts = [];
 let libraryLoaded = false;
@@ -1010,7 +1009,7 @@ async function playPrev(cat) {
 }
 
 /* =======================
-   ORACLE FUNCTIONS
+   Q&A FUNCTIONS
    ======================= */
 
 async function loadLibrary() {
@@ -1047,7 +1046,7 @@ async function loadLibrary() {
     }
     
     libraryLoaded = true;
-    addSystemMessage(`✅ Libreria caricata: ${libraryTexts.length} testi pronti`);
+    addSystemMessage(`✅ Conoscenza caricata: ${libraryTexts.length} testi pronti`);
     return true;
     
   } catch (e) {
@@ -1073,7 +1072,7 @@ async function askOracle(question) {
   if (!question || question.trim() === '') return;
   
   addMessage(question, 'user');
-  addSystemMessage('🔮 L\'Oracolo sta consultando la sua saggezza...');
+  addSystemMessage('🔮 Elaborazione in corso...');
   
   if (!ANTHROPIC_API_KEY) {
     addMessage("⚠️ API Key non configurata! Inserisci la tua chiave Anthropic nel codice.", 'oracle');
@@ -1089,7 +1088,7 @@ async function askOracle(question) {
     `[Fonte: ${t.filename}]\n${t.content}`
   ).join('\n\n---\n\n');
   
-  const systemPrompt = `Sei l'Oracolo della Matrice, un'entità saggia che POSSIEDE questa conoscenza nel suo essere.
+  const systemPrompt = `Sei OCHO, un'entità saggia che POSSIEDE questa conoscenza nel suo essere.
 
 La tua conoscenza proviene da:
 ${libraryContext}
@@ -1141,7 +1140,7 @@ Assorbi i concetti, parlali come tuoi, sii breve e diretto.`;
     
     // Rimuovi il messaggio di caricamento
     const loadingMsg = oracleMessages.querySelector('.message.system:last-child');
-    if (loadingMsg && loadingMsg.textContent.includes('consultando')) {
+    if (loadingMsg && loadingMsg.textContent.includes('Elaborazione')) {
       loadingMsg.remove();
     }
     
@@ -1149,7 +1148,7 @@ Assorbi i concetti, parlali come tuoi, sii breve e diretto.`;
     lastOracleResponse = answer;
     
   } catch (error) {
-    console.error('Errore Oracle:', error);
+    console.error('Errore sistema Q&A:', error);
     addMessage(`Errore nella consultazione: ${error.message}`, 'system');
   }
 }
@@ -1251,7 +1250,7 @@ document.getElementById("backToPills").addEventListener("click", () => {
 // Oracle button
 document.getElementById("oracleBtn").addEventListener("click", async () => {
   show("oracle");
-  setStatus("Oracolo attivo");
+  setStatus("Sistema attivo");
   if (!libraryLoaded) {
     await loadLibrary();
   }
@@ -1282,7 +1281,7 @@ speakBtn.addEventListener("click", () => {
 });
 
 clearBtn.addEventListener("click", () => {
-  oracleMessages.innerHTML = '<div class="message system">🌌 Chat pulita. Oracolo pronto.</div>';
+  oracleMessages.innerHTML = '<div class="message system">🌌 Chat pulita. Sistema pronto.</div>';
   lastOracleResponse = '';
 });
 
@@ -1341,10 +1340,9 @@ video.addEventListener("timeupdate", updateTime);
 show("enter");
 setStatus("In attesa…");
 
-console.log("🚀 OCHO v2.0 ORACLE EDITION!");
-console.log("🔮 Oracolo AI integrato con libreria dinamica");
+console.log("🚀 OCHO v2.0 pronto!");
 console.log(`📅 File NEW = scoperti negli ultimi ${NEW_FILE_DAYS} giorni`);
-console.log("⚡ Sistema pronto");
+console.log("⚡ Sistema attivo");
 </script>
 </body>
 </html>
