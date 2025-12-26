@@ -3,146 +3,453 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OCHO • Random Jukebox</title>
+  <title>OCHO • Enhanced Jukebox</title>
 
   <style>
-    :root{ --green:#00ff9a; --blue:#1f6fff; --red:#ff2d2d; }
+    :root{ 
+      --green:#00ff9a; 
+      --blue:#1f6fff; 
+      --red:#ff2d2d;
+      --dark:#0a0e0d;
+    }
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;background:#000;color:#eafff6;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+    html,body{height:100%;margin:0;background:var(--dark);color:#eafff6;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
     body{overflow:hidden}
+
+    /* Matrix Rain Background */
+    #matrixCanvas{
+      position:fixed;
+      top:0;left:0;
+      width:100%;height:100%;
+      opacity:0.15;
+      pointer-events:none;
+      z-index:1;
+    }
 
     /* Background container */
     .bg{
       position:fixed; inset:0;
       background:
-        radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.10), transparent 60%),
-        radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.08), transparent 60%),
+        radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.12), transparent 60%),
+        radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.10), transparent 60%),
         url("assets/matrix.jpg") center/cover no-repeat;
-      filter:saturate(1.05) contrast(1.05);
+      filter:saturate(1.1) contrast(1.08);
       transform:scale(1.02);
+      z-index:2;
     }
-    .vignette{position:fixed; inset:-40px; background:radial-gradient(circle at 50% 55%, transparent 35%, rgba(0,0,0,.75) 78%); pointer-events:none;}
-    .scanlines{position:fixed; inset:0; background:repeating-linear-gradient(to bottom, rgba(255,255,255,.02), rgba(255,255,255,.02) 1px, rgba(0,0,0,0) 3px, rgba(0,0,0,0) 6px); mix-blend-mode:overlay; opacity:.45; pointer-events:none;}
+    .vignette{
+      position:fixed; 
+      inset:-40px; 
+      background:radial-gradient(circle at 50% 55%, transparent 35%, rgba(0,0,0,.8) 78%); 
+      pointer-events:none;
+      z-index:3;
+    }
+    .scanlines{
+      position:fixed; 
+      inset:0; 
+      background:repeating-linear-gradient(to bottom, rgba(255,255,255,.02), rgba(255,255,255,.02) 1px, rgba(0,0,0,0) 3px, rgba(0,0,0,0) 6px); 
+      mix-blend-mode:overlay; 
+      opacity:.45; 
+      pointer-events:none;
+      z-index:4;
+      animation:scan 8s linear infinite;
+    }
+    @keyframes scan{
+      0%{transform:translateY(0)}
+      100%{transform:translateY(10px)}
+    }
 
-    .wrap{position:relative;height:100%;display:flex;align-items:center;justify-content:center;padding:18px;}
+    /* Floating particles */
+    .particles{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:3;
+    }
+    .particle{
+      position:absolute;
+      width:3px;
+      height:3px;
+      background:var(--green);
+      border-radius:50%;
+      opacity:0;
+      animation:float 15s infinite;
+      box-shadow:0 0 10px var(--green);
+    }
+    @keyframes float{
+      0%{opacity:0;transform:translateY(100vh) translateX(0)}
+      10%{opacity:0.6}
+      90%{opacity:0.3}
+      100%{opacity:0;transform:translateY(-20vh) translateX(100px)}
+    }
+
+    .wrap{
+      position:relative;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:10;
+    }
     .panel{
-      width:min(980px,96vw); height:min(640px,92vh);
-      border:1px solid rgba(0,255,154,.25);
+      width:min(980px,96vw); 
+      height:min(640px,92vh);
+      border:1px solid rgba(0,255,154,.35);
       border-radius:18px;
-      background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.35));
-      box-shadow:0 0 0 1px rgba(0,255,154,.12) inset, 0 25px 80px rgba(0,0,0,.6);
-      position:relative; overflow:hidden;
+      background:linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.45));
+      box-shadow:
+        0 0 0 1px rgba(0,255,154,.15) inset, 
+        0 0 40px rgba(0,255,154,.2),
+        0 25px 80px rgba(0,0,0,.7);
+      position:relative; 
+      overflow:hidden;
+      animation:panelGlow 3s ease-in-out infinite;
+    }
+    @keyframes panelGlow{
+      0%, 100%{box-shadow:0 0 0 1px rgba(0,255,154,.15) inset, 0 0 40px rgba(0,255,154,.2), 0 25px 80px rgba(0,0,0,.7);}
+      50%{box-shadow:0 0 0 1px rgba(0,255,154,.25) inset, 0 0 60px rgba(0,255,154,.3), 0 25px 80px rgba(0,0,0,.7);}
     }
 
     .hud{
-      position:absolute; left:16px; right:16px; top:14px;
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      position:absolute; 
+      left:16px; 
+      right:16px; 
+      top:14px;
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between; 
+      gap:12px;
       pointer-events:none;
+      z-index:20;
     }
     .brand{display:flex;flex-direction:column;gap:2px;}
-    .brand b{letter-spacing:.22em;color:var(--green);text-shadow:0 0 12px rgba(0,255,154,.35);font-size:12px;}
-    .status{font-size:12px;color:#bfffe7;opacity:.9;text-align:right;}
-    .status .dot{display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--green);box-shadow:0 0 10px rgba(0,255,154,.6);margin-right:8px;vertical-align:middle;}
+    .brand b{
+      letter-spacing:.30em;
+      color:var(--green);
+      text-shadow:0 0 15px rgba(0,255,154,.5), 0 0 30px rgba(0,255,154,.3);
+      font-size:14px;
+      animation:glitch 5s infinite;
+    }
+    @keyframes glitch{
+      0%, 90%, 100%{transform:translate(0)}
+      91%{transform:translate(-2px, 1px)}
+      92%{transform:translate(2px, -1px)}
+      93%{transform:translate(0)}
+    }
 
-    .screen{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:26px;}
+    .status{
+      font-size:12px;
+      color:#bfffe7;
+      opacity:.9;
+      text-align:right;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .status .dot{
+      display:inline-block;
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--green);
+      box-shadow:0 0 12px rgba(0,255,154,.8);
+      animation:pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%, 100%{opacity:1;transform:scale(1)}
+      50%{opacity:0.6;transform:scale(0.9)}
+    }
+
+    .screen{
+      position:absolute; 
+      inset:0; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      padding:26px;
+      opacity:0;
+      transition:opacity 0.4s ease;
+    }
+    .screen.active{opacity:1;}
     .hidden{display:none;}
 
     .card{
       width:min(720px,92%);
-      background:rgba(0,0,0,.45);
-      border:1px solid rgba(0,255,154,.20);
+      background:rgba(0,0,0,.55);
+      border:1px solid rgba(0,255,154,.25);
       border-radius:18px;
-      padding:22px 20px;
-      box-shadow:0 0 0 1px rgba(0,255,154,.08) inset;
-      backdrop-filter:blur(8px);
+      padding:26px 24px;
+      box-shadow:
+        0 0 0 1px rgba(0,255,154,.12) inset,
+        0 10px 40px rgba(0,0,0,.5);
+      backdrop-filter:blur(10px);
       text-align:center;
+      transform:scale(0.95);
+      transition:transform 0.4s ease;
     }
-    .title{margin:0 0 10px;font-size:22px;letter-spacing:.06em;text-shadow:0 0 18px rgba(0,255,154,.22);}
+    .screen.active .card{transform:scale(1);}
+
+    .title{
+      margin:0 0 10px;
+      font-size:26px;
+      letter-spacing:.08em;
+      text-shadow:0 0 20px rgba(0,255,154,.3);
+      background:linear-gradient(135deg, #fff, var(--green));
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
     .subtitle{margin:0 0 14px;font-size:13px;line-height:1.45;opacity:.9;}
-    .controls{margin-top:14px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+    .controls{margin-top:18px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
 
     .btn{
-      appearance:none;border:1px solid rgba(255,255,255,.14);
-      border-radius:16px;background:rgba(0,0,0,.55);color:#fff;
-      padding:12px 16px;cursor:pointer;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
-      transition:transform .12s ease;
+      appearance:none;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:16px;
+      background:rgba(0,0,0,.6);
+      color:#fff;
+      padding:14px 20px;
+      cursor:pointer;
+      font-weight:900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      transition:all .2s ease;
       -webkit-tap-highlight-color:transparent;
-      display:flex;align-items:center;justify-content:center;gap:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      position:relative;
+      overflow:hidden;
     }
-    .btn:active{transform:translateY(1px) scale(.99);}
-    .btn.blue{border-color:rgba(31,111,255,.35);}
-    .btn.red{border-color:rgba(255,45,45,.35);}
-    .btn.green{border-color:rgba(0,255,154,.30);}
+    .btn:before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(135deg, transparent, rgba(255,255,255,.1), transparent);
+      transform:translateX(-100%);
+      transition:transform 0.6s;
+    }
+    .btn:hover:before{transform:translateX(100%);}
+    .btn:hover{
+      transform:translateY(-2px);
+      box-shadow:0 5px 20px rgba(0,255,154,.3);
+    }
+    .btn:active{transform:translateY(0) scale(.98);}
+    .btn.blue{border-color:rgba(31,111,255,.4); box-shadow:0 0 15px rgba(31,111,255,.2);}
+    .btn.blue:hover{box-shadow:0 5px 25px rgba(31,111,255,.4);}
+    .btn.red{border-color:rgba(255,45,45,.4); box-shadow:0 0 15px rgba(255,45,45,.2);}
+    .btn.red:hover{box-shadow:0 5px 25px rgba(255,45,45,.4);}
+    .btn.green{border-color:rgba(0,255,154,.35); box-shadow:0 0 15px rgba(0,255,154,.2);}
+    .btn.green:hover{box-shadow:0 5px 25px rgba(0,255,154,.4);}
 
     .pill{
-      width:22px;height:12px;border-radius:999px;position:relative;display:inline-block;
-      border:1px solid rgba(255,255,255,.18);overflow:hidden;
+      width:24px;
+      height:14px;
+      border-radius:999px;
+      position:relative;
+      display:inline-block;
+      border:1px solid rgba(255,255,255,.2);
+      overflow:hidden;
     }
     .pill:before,.pill:after{content:"";position:absolute;inset:0;width:50%;opacity:.95;}
     .pill:after{left:50%;}
-    .pill.blue:before{background:rgba(31,111,255,.95);} .pill.blue:after{background:rgba(0,0,0,.25);}
-    .pill.red:before{background:rgba(255,45,45,.95);}   .pill.red:after{background:rgba(0,0,0,.25);}
+    .pill.blue:before{background:rgba(31,111,255,.95);} 
+    .pill.blue:after{background:rgba(0,0,0,.3);}
+    .pill.red:before{background:rgba(255,45,45,.95);}   
+    .pill.red:after{background:rgba(0,0,0,.3);}
 
-    .menuGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px;}
-    .menuBtn{
-      border:1px solid rgba(0,255,154,.18);
-      background:rgba(0,0,0,.40);
-      color:#dfffee;border-radius:16px;padding:14px 12px;
-      cursor:pointer;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+    .menuGrid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+      margin-top:16px;
     }
-    .menuBtn:active{transform:translateY(1px) scale(.99);}
-
-    /* ====== MODIFICA SOLO PER FRASI (sottotitolo piccolo) ====== */
-    .menuTitle{display:block;}
-    .menuSub{
-      display:block;
-      margin-top:4px;
-      font-size:11px;
+    .menuBtn{
+      border:1px solid rgba(0,255,154,.22);
+      background:rgba(0,0,0,.45);
+      color:#dfffee;
+      border-radius:16px;
+      padding:18px 14px;
+      cursor:pointer;
+      font-weight:900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      transition:all 0.3s ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .menuBtn:before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(135deg, transparent, rgba(0,255,154,.1), transparent);
+      transform:translateX(-100%);
+      transition:transform 0.6s;
+    }
+    .menuBtn:hover:before{transform:translateX(100%);}
+    .menuBtn:hover{
+      transform:translateY(-3px);
+      border-color:rgba(0,255,154,.4);
+      box-shadow:0 8px 25px rgba(0,255,154,.25);
+    }
+    .menuBtn:active{transform:translateY(0) scale(.98);}
+    .menuBtn .btnCaption{
+      font-size:10px;
       font-weight:400;
-      letter-spacing:.02em;
-      opacity:.75;
+      letter-spacing:.04em;
       text-transform:none;
-      line-height:1.25;
+      opacity:.7;
+      line-height:1.3;
+      max-width:90%;
     }
 
     .playerbar{
-      position:absolute; left:16px; right:16px; bottom:16px;
-      border-radius:14px; border:1px solid rgba(0,255,154,.18);
-      background:rgba(0,0,0,.38);
-      padding:10px 12px;
-      backdrop-filter:blur(8px);
+      position:absolute; 
+      left:16px; 
+      right:16px; 
+      bottom:16px;
+      border-radius:16px; 
+      border:1px solid rgba(0,255,154,.25);
+      background:rgba(0,0,0,.5);
+      padding:14px 16px;
+      backdrop-filter:blur(12px);
+      box-shadow:0 0 30px rgba(0,0,0,.6), 0 0 0 1px rgba(0,255,154,.15) inset;
       display:none;
+      z-index:30;
     }
     .playerbar.on{display:block;}
-    .track{font-size:14px;font-weight:900;opacity:.95;margin-bottom:8px;text-align:center;letter-spacing:.08em;}
-    audio,video{width:100%;}
-    video{max-height:240px;}
-    .row{display:flex;justify-content:center;margin-top:12px;}
-    .ghost{border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.28);color:#dfffee;border-radius:14px;padding:10px 12px;cursor:pointer;font-weight:900;}
-
-    .stopBtn{
-      border:1px solid rgba(255,45,45,.35);
-      background:rgba(0,0,0,.55);
-      color:#ff2d2d;
+    
+    .track{
+      font-size:13px;
+      font-weight:700;
+      opacity:.95;
+      margin-bottom:10px;
+      text-align:center;
+      letter-spacing:.06em;
+      color:var(--green);
+      text-shadow:0 0 10px rgba(0,255,154,.4);
+    }
+    .progress-info{
+      display:flex;
+      justify-content:center;
+      font-size:11px;
+      opacity:.75;
+      margin-bottom:8px;
+    }
+    
+    audio,video{width:100%;margin:10px 0;}
+    video{max-height:240px;border-radius:8px;}
+    
+    .player-controls{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+    .player-controls button{
+      border:1px solid rgba(255,255,255,.2);
+      background:rgba(0,0,0,.4);
+      color:#dfffee;
       border-radius:12px;
       padding:8px 14px;
+      cursor:pointer;
+      font-weight:700;
+      font-size:11px;
+      transition:all 0.2s;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+    }
+    .player-controls button:hover{
+      background:rgba(0,255,154,.2);
+      border-color:rgba(0,255,154,.4);
+      transform:translateY(-1px);
+    }
+    .player-controls button.active{
+      background:rgba(0,255,154,.3);
+      border-color:var(--green);
+    }
+
+    .row{display:flex;justify-content:center;margin-top:14px;}
+    .ghost{
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(0,0,0,.35);
+      color:#dfffee;
+      border-radius:14px;
+      padding:10px 16px;
+      cursor:pointer;
+      font-weight:700;
+      transition:all 0.2s;
+    }
+    .ghost:hover{
+      background:rgba(255,255,255,.1);
+      transform:translateY(-2px);
+    }
+
+    .stopBtn{
+      border:1px solid rgba(255,45,45,.4);
+      background:rgba(0,0,0,.6);
+      color:#ff2d2d;
+      border-radius:12px;
+      padding:10px 16px;
       cursor:pointer;
       font-weight:900;
       letter-spacing:.06em;
       text-transform:uppercase;
       margin-top:10px;
       width:100%;
+      transition:all 0.2s;
     }
-    .stopBtn:active{transform:translateY(1px) scale(.99);}
+    .stopBtn:hover{
+      background:rgba(255,45,45,.2);
+      border-color:var(--red);
+      box-shadow:0 0 20px rgba(255,45,45,.3);
+    }
+    .stopBtn:active{transform:scale(.98);}
+
+    /* Playing indicator */
+    .playing-indicator{
+      display:none;
+      align-items:center;
+      gap:4px;
+      margin-left:8px;
+    }
+    .playing-indicator.active{display:inline-flex;}
+    .bar{
+      width:3px;
+      height:12px;
+      background:var(--green);
+      animation:soundbar 0.8s ease-in-out infinite;
+    }
+    .bar:nth-child(1){animation-delay:0s;}
+    .bar:nth-child(2){animation-delay:0.2s;}
+    .bar:nth-child(3){animation-delay:0.4s;}
+    @keyframes soundbar{
+      0%, 100%{height:6px}
+      50%{height:14px}
+    }
 
     @media (max-width:640px){
       .menuGrid{grid-template-columns:1fr;}
       video{max-height:200px;}
+      .title{font-size:22px;}
     }
   </style>
 </head>
 
 <body>
+  <!-- Matrix Rain Canvas -->
+  <canvas id="matrixCanvas"></canvas>
+  
+  <!-- Floating particles -->
+  <div class="particles" id="particles"></div>
+
   <div class="bg" id="bg"></div>
   <div class="vignette"></div>
   <div class="scanlines"></div>
@@ -151,27 +458,36 @@
     <div class="panel">
       <div class="hud">
         <div class="brand"><b>O C H O</b></div>
-        <div class="status"><span class="dot"></span><span id="statusText">In attesa…</span></div>
-      </div>
-
-      <!-- SCREEN: TOCCA PER ENTRARE -->
-      <div class="screen" id="screenEnter">
-        <div class="card">
-          <h1 class="title">TOCCA PER ENTRARE</h1>
-          
-          <div class="controls">
-            <button class="btn green" id="enterBtn">TOCCA</button>
+        <div class="status">
+          <span class="dot"></span>
+          <span id="statusText">In attesa…</span>
+          <div class="playing-indicator" id="playingIndicator">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
           </div>
         </div>
       </div>
 
-      <!-- SCREEN: PILLs (sfondo inizio.jpeg) -->
+      <!-- SCREEN: TOCCA PER ENTRARE -->
+      <div class="screen active" id="screenEnter">
+        <div class="card">
+          <h1 class="title">TOCCA PER ENTRARE</h1>
+          <p class="subtitle">Inizia l'esperienza OCHO</p>
+          <div class="controls">
+            <button class="btn green" id="enterBtn">ACCEDI AL SISTEMA</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: PILLs -->
       <div class="screen hidden" id="screenPills">
         <div class="card">
           <h1 class="title">SCEGLI LA PILLOLA</h1>
+          <p class="subtitle">Pillola blu: ritorni alla realtà<br>Pillola rossa: scopri quanto è profonda la tana</p>
           <div class="controls">
-            <button class="btn blue" id="blueBtn"><span class="pill blue"></span>Pillola blu</button>
-            <button class="btn red" id="redBtn"><span class="pill red"></span>Pillola rossa</button>
+            <button class="btn blue" id="blueBtn"><span class="pill blue"></span>Pillola Blu</button>
+            <button class="btn red" id="redBtn"><span class="pill red"></span>Pillola Rossa</button>
           </div>
         </div>
       </div>
@@ -179,18 +495,26 @@
       <!-- SCREEN: RED MENU -->
       <div class="screen hidden" id="screenMenu">
         <div class="card">
-          <h1 class="title">MENU</h1>
+          <h1 class="title">ARCHIVIO DIGITALE</h1>
+          <p class="subtitle">Seleziona una categoria</p>
 
           <div class="menuGrid">
-            <!-- ====== MODIFICA SOLO QUI: FRASI con sottotitolo ====== -->
             <button class="menuBtn" data-cat="frasi">
-              <span class="menuTitle">FRASI</span>
-              <span class="menuSub">assiomi da cui partire, non conclusioni da dimostrare.</span>
+              <span>FRASI</span>
+              <span class="btnCaption">assiomi da cui partire, non conclusioni da dimostrare</span>
             </button>
-
-            <button class="menuBtn" data-cat="song">SONG</button>
-            <button class="menuBtn" data-cat="broadcast">BROADCAST</button>
-            <button class="menuBtn" data-cat="video">VIDEO</button>
+            <button class="menuBtn" data-cat="song">
+              <span>SONG</span>
+              <span class="btnCaption">frequenze sonore del campo</span>
+            </button>
+            <button class="menuBtn" data-cat="broadcast">
+              <span>BROADCAST</span>
+              <span class="btnCaption">trasmissioni dal sistema</span>
+            </button>
+            <button class="menuBtn" data-cat="video">
+              <span>VIDEO</span>
+              <span class="btnCaption">proiezioni visive della matrice</span>
+            </button>
           </div>
 
           <div class="row">
@@ -202,9 +526,19 @@
       <!-- PLAYER -->
       <div class="playerbar" id="playerbar">
         <div class="track" id="track">—</div>
+        <div class="progress-info">
+          <span id="timeText">0:00 / 0:00</span>
+        </div>
         <audio id="audio" controls></audio>
         <video id="video" controls class="hidden"></video>
-        <button class="stopBtn" id="stopBtn">⏹ STOP - TORNA AL MENU</button>
+        
+        <div class="player-controls">
+          <button id="prevBtn">◄ PREC</button>
+          <button id="nextBtn">SUCC ►</button>
+          <button id="shuffleBtn">⧉ CASUALE</button>
+        </div>
+        
+        <button class="stopBtn" id="stopBtn">■ STOP - TORNA AL MENU</button>
       </div>
 
       <!-- AUDIO INTRO -->
@@ -218,11 +552,9 @@
    ======================= */
 const GITHUB_USER = "fabriziodadamo72-source";
 const GITHUB_REPO = "jukebox-random";
-const GITHUB_BRANCH = "main"; // o "master" se usi master
-
+const GITHUB_BRANCH = "main";
 const ANSA_URL = "https://www.ansa.it/";
 
-// Configurazione cartelle e estensioni
 const FOLDERS = {
   frasi: { path: "mp3", exts: [".mp3"], exclude: ["inizio.mp3"] },
   song: { path: "song", exts: [".mp3"] },
@@ -237,12 +569,15 @@ const playlists = new Map();
 const decks = new Map();
 const deckPos = new Map();
 let currentCat = "frasi";
+let shuffleMode = true;
+let playHistory = [];
 
 /* =======================
    ELEMENTS
    ======================= */
 const bg = document.getElementById("bg");
 const statusText = document.getElementById("statusText");
+const playingIndicator = document.getElementById("playingIndicator");
 
 const screenEnter = document.getElementById("screenEnter");
 const screenPills = document.getElementById("screenPills");
@@ -252,57 +587,135 @@ const introAudio = document.getElementById("introAudio");
 
 const playerbar = document.getElementById("playerbar");
 const trackEl = document.getElementById("track");
+const filenameEl = document.getElementById("filename");
+const progressText = document.getElementById("progressText");
+const timeText = document.getElementById("timeText");
 const audio = document.getElementById("audio");
 const video = document.getElementById("video");
+const shuffleBtn = document.getElementById("shuffleBtn");
+
+/* =======================
+   MATRIX RAIN EFFECT
+   ======================= */
+const canvas = document.getElementById("matrixCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()";
+const fontSize = 14;
+const columns = canvas.width / fontSize;
+const drops = Array(Math.floor(columns)).fill(1);
+
+function drawMatrix() {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.fillStyle = "#00ff9a";
+  ctx.font = fontSize + "px monospace";
+  
+  for (let i = 0; i < drops.length; i++) {
+    const text = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+    
+    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+      drops[i] = 0;
+    }
+    drops[i]++;
+  }
+}
+
+setInterval(drawMatrix, 50);
+
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+/* =======================
+   FLOATING PARTICLES
+   ======================= */
+function createParticles() {
+  const container = document.getElementById("particles");
+  for (let i = 0; i < 20; i++) {
+    const particle = document.createElement("div");
+    particle.className = "particle";
+    particle.style.left = Math.random() * 100 + "%";
+    particle.style.animationDelay = Math.random() * 15 + "s";
+    particle.style.animationDuration = (10 + Math.random() * 10) + "s";
+    container.appendChild(particle);
+  }
+}
+createParticles();
 
 /* =======================
    HELPERS
    ======================= */
-function setStatus(msg){ statusText.textContent = msg; }
-function show(which){
-  screenEnter.classList.toggle("hidden", which !== "enter");
-  screenPills.classList.toggle("hidden", which !== "pills");
-  screenMenu.classList.toggle("hidden", which !== "menu");
+function setStatus(msg) { 
+  statusText.textContent = msg; 
 }
-function showPlayer(on){ playerbar.classList.toggle("on", !!on); }
 
-function shuffle(arr){
-  for(let i=arr.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [arr[i],arr[j]]=[arr[j],arr[i]];
+function show(which) {
+  const screens = [screenEnter, screenPills, screenMenu];
+  screens.forEach(s => {
+    if (s.id === `screen${which.charAt(0).toUpperCase() + which.slice(1)}`) {
+      s.classList.remove("hidden");
+      setTimeout(() => s.classList.add("active"), 10);
+    } else {
+      s.classList.remove("active");
+      setTimeout(() => s.classList.add("hidden"), 400);
+    }
+  });
+}
+
+function showPlayer(on) { 
+  playerbar.classList.toggle("on", !!on); 
+  playingIndicator.classList.toggle("active", !!on);
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 /* =======================
    GITHUB API
    ======================= */
-async function fetchGitHubFolder(folderPath){
+async function fetchGitHubFolder(folderPath) {
   const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${folderPath}?ref=${GITHUB_BRANCH}`;
-  try{
+  try {
     const res = await fetch(url);
-    if(!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+    if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
     const data = await res.json();
     return data.filter(item => item.type === "file").map(item => item.name);
-  }catch(e){
+  } catch (e) {
     console.error("Errore fetch GitHub:", e);
     return [];
   }
 }
 
-async function loadCat(cat){
-  if(playlists.has(cat)) return true;
+async function loadCat(cat) {
+  if (playlists.has(cat)) return true;
   
   setStatus(`Caricamento ${cat}...`);
   const config = FOLDERS[cat];
-  if(!config){
+  if (!config) {
     console.error("Categoria sconosciuta:", cat);
     return false;
   }
 
   const allFiles = await fetchGitHubFolder(config.path);
   
-  // Filtra per estensione e escludi file specifici
   let files = allFiles.filter(name => {
     const lower = name.toLowerCase();
     const hasExt = config.exts.some(ext => lower.endsWith(ext));
@@ -310,75 +723,116 @@ async function loadCat(cat){
     return hasExt && !isExcluded;
   });
 
-  if(!files.length){
+  if (!files.length) {
     setStatus(`Nessun file in ${cat}`);
     trackEl.textContent = `ERRORE: Nessun file trovato in ${config.path}/`;
     showPlayer(true);
     return false;
   }
 
-  // Costruisci percorsi completi
   files = files.map(f => `${config.path}/${f}`);
 
   playlists.set(cat, files);
-  decks.set(cat, shuffle([...Array(files.length).keys()]));
-  deckPos.set(cat, 0);
+  resetDeck(cat);
   
   console.log(`✅ ${cat}: ${files.length} file caricati`);
   return true;
 }
 
-function resetDeck(cat){
+function resetDeck(cat) {
   const n = (playlists.get(cat) || []).length;
-  decks.set(cat, shuffle([...Array(n).keys()]));
+  const indices = [...Array(n).keys()];
+  decks.set(cat, shuffleMode ? shuffle(indices) : indices);
   deckPos.set(cat, 0);
 }
 
-function draw(cat){
+function draw(cat) {
   const list = playlists.get(cat) || [];
-  if(!list.length) return -1;
-  if(!decks.has(cat) || !deckPos.has(cat)) resetDeck(cat);
+  if (!list.length) return -1;
+  if (!decks.has(cat) || !deckPos.has(cat)) resetDeck(cat);
 
   let p = deckPos.get(cat);
   const d = decks.get(cat);
-  if(p >= d.length){ resetDeck(cat); p = 0; }
-  const idx = decks.get(cat)[p];
+  if (p >= d.length) { resetDeck(cat); p = 0; }
+  const idx = d[p];
   deckPos.set(cat, p + 1);
   return idx;
 }
 
-function playPath(cat, src){
-  currentCat = cat;
-  showPlayer(true);
-  trackEl.textContent = `[${cat.toUpperCase()}]`;
-  setStatus("In riproduzione…");
+function drawPrev(cat) {
+  const list = playlists.get(cat) || [];
+  if (!list.length) return -1;
+  
+  let p = deckPos.get(cat);
+  p = p - 2; // Go back 2 (one for current, one for previous)
+  if (p < 0) p = decks.get(cat).length - 1;
+  deckPos.set(cat, p);
+  
+  return draw(cat);
+}
 
-  if(cat === "video"){
-    audio.pause(); audio.classList.add("hidden");
-    video.classList.remove("hidden");
-    video.src = src;
-    video.play().then(() => {
-      // Fullscreen automatico
-      if(video.requestFullscreen) {
-        video.requestFullscreen().catch(()=>{});
-      } else if(video.webkitRequestFullscreen) {
-        video.webkitRequestFullscreen();
-      } else if(video.mozRequestFullScreen) {
-        video.mozRequestFullScreen();
-      }
-    }).catch(()=>{});
-  }else{
-    video.pause(); video.classList.add("hidden");
-    audio.classList.remove("hidden");
-    audio.src = src;
-    audio.play().catch(()=>{});
+function updateProgress() {
+  const pos = deckPos.get(currentCat) || 0;
+  const total = (playlists.get(currentCat) || []).length;
+  progressText.textContent = `File ${pos}/${total}`;
+}
+
+function updateTime() {
+  const media = currentCat === "video" ? video : audio;
+  if (media.duration) {
+    timeText.textContent = `${formatTime(media.currentTime)} / ${formatTime(media.duration)}`;
   }
 }
 
-async function playNext(cat){
+function playPath(cat, src) {
+  currentCat = cat;
+  showPlayer(true);
+  trackEl.textContent = `[${cat.toUpperCase()}]`;
+  
+  // const filename = src.split('/').pop();
+  // filenameEl.textContent = filename;
+  
+  // updateProgress();
+  setStatus("In riproduzione…");
+
+  if (cat === "video") {
+    audio.pause();
+    audio.classList.add("hidden");
+    video.classList.remove("hidden");
+    video.src = src;
+    video.play().then(() => {
+      if (video.requestFullscreen) {
+        video.requestFullscreen().catch(() => {});
+      } else if (video.webkitRequestFullscreen) {
+        video.webkitRequestFullscreen();
+      } else if (video.mozRequestFullScreen) {
+        video.mozRequestFullScreen();
+      }
+    }).catch(() => {});
+  } else {
+    video.pause();
+    video.classList.add("hidden");
+    audio.classList.remove("hidden");
+    audio.src = src;
+    audio.play().catch(() => {});
+  }
+  
+  playHistory.push({cat, src, time: new Date()});
+  if (playHistory.length > 50) playHistory.shift();
+}
+
+async function playNext(cat) {
   const ok = await loadCat(cat);
-  if(!ok) return;
+  if (!ok) return;
   const idx = draw(cat);
+  const src = playlists.get(cat)[idx];
+  playPath(cat, src);
+}
+
+async function playPrev(cat) {
+  const ok = await loadCat(cat);
+  if (!ok) return;
+  const idx = drawPrev(cat);
   const src = playlists.get(cat)[idx];
   playPath(cat, src);
 }
@@ -387,52 +841,66 @@ async function playNext(cat){
    EVENTS
    ======================= */
 
-document.getElementById("enterBtn").addEventListener("click", ()=>{
+document.getElementById("enterBtn").addEventListener("click", () => {
   setStatus("Avvio…");
   introAudio.currentTime = 0;
-  introAudio.play().catch(()=>{});
+  introAudio.play().catch(() => {});
   bg.style.backgroundImage =
-    `radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.10), transparent 60%),
-     radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.08), transparent 60%),
+    `radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.12), transparent 60%),
+     radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.10), transparent 60%),
      url("assets/inizio.jpeg") center/cover no-repeat`;
   show("pills");
   setStatus("Pronto.");
 });
 
-document.getElementById("blueBtn").addEventListener("click", ()=>{
+document.getElementById("blueBtn").addEventListener("click", () => {
   introAudio.pause();
   window.open(ANSA_URL, "_blank", "noopener,noreferrer");
 });
 
-document.getElementById("redBtn").addEventListener("click", ()=>{
+document.getElementById("redBtn").addEventListener("click", () => {
   introAudio.pause();
   show("menu");
   setStatus("Menu.");
 });
 
-document.getElementById("backToPills").addEventListener("click", ()=>{
+document.getElementById("backToPills").addEventListener("click", () => {
   show("pills");
   setStatus("Pronto.");
 });
 
-document.querySelectorAll(".menuBtn").forEach(b=>{
-  b.addEventListener("click", ()=> playNext(b.dataset.cat));
+document.querySelectorAll(".menuBtn").forEach(b => {
+  b.addEventListener("click", () => playNext(b.dataset.cat));
 });
 
-// Pulsante STOP
-document.getElementById("stopBtn").addEventListener("click", ()=>{
+document.getElementById("prevBtn").addEventListener("click", () => {
+  playPrev(currentCat);
+});
+
+document.getElementById("nextBtn").addEventListener("click", () => {
+  playNext(currentCat);
+});
+
+shuffleBtn.addEventListener("click", () => {
+  shuffleMode = !shuffleMode;
+  shuffleBtn.classList.toggle("active", shuffleMode);
+  resetDeck(currentCat);
+  setStatus(shuffleMode ? "Casuale ON" : "Casuale OFF");
+});
+shuffleBtn.classList.add("active");
+
+document.getElementById("stopBtn").addEventListener("click", () => {
   audio.pause();
   audio.src = "";
   video.pause();
   video.src = "";
   
-  // Esci da fullscreen se attivo
-  if(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
-    if(document.exitFullscreen) {
+  if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
+    if (document.exitFullscreen) {
       document.exitFullscreen();
-    } else if(document.webkitExitFullscreen) {
+    } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
-    } else if(document.mozCancelFullScreen) {
+    } else if (document.mozCancelFullScreen) {
       document.mozCancelFullScreen();
     }
   }
@@ -442,8 +910,11 @@ document.getElementById("stopBtn").addEventListener("click", ()=>{
   setStatus("Menu.");
 });
 
-audio.addEventListener("ended", ()=> playNext(currentCat));
-video.addEventListener("ended", ()=> playNext(currentCat));
+audio.addEventListener("ended", () => playNext(currentCat));
+video.addEventListener("ended", () => playNext(currentCat));
+
+audio.addEventListener("timeupdate", updateTime);
+video.addEventListener("timeupdate", updateTime);
 
 /* BOOT */
 show("enter");
