@@ -860,13 +860,11 @@
       <div class="screen hidden" id="screenOracle">
         <div class="card oracleCard">
           <h1 class="title">🔮 OCHO - ORACOLO DEL SISTEMA</h1>
-          <p class="subtitle">Fai la tua domanda usando il microfono. OCHO risponderà con la voce di Jack.</p>
+          <p class="subtitle">Fai la tua domanda usando il microfono. OCHO risponderà con saggezza antica.</p>
 
           <!-- Chat messages -->
           <div class="oracleChat" id="oracleChat">
-            <div class="message system">
-              🌌 Sistema OCHO inizializzato. Caricamento biblioteca in corso...
-            </div>
+            <!-- I messaggi appariranno qui dinamicamente -->
           </div>
 
           <!-- Microfono -->
@@ -1546,6 +1544,14 @@ function openPortal() {
   setTimeout(() => {
     show("screenOracle");
     setStatus("OCHO attivo");
+    
+    // Svuota chat e mostra messaggio di benvenuto magico
+    oracleChat.innerHTML = '';
+    
+    setTimeout(() => {
+      showMagicTypewriter("Io sono OCHO. Il portale è aperto. Fai la tua domanda e ti rivelerò ciò che so.");
+    }, 300);
+    
     if (!libraryLoaded) {
       loadLibrary();
     }
