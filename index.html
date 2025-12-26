@@ -308,6 +308,25 @@
       line-height:1.3;
       max-width:90%;
     }
+    .newBadge{
+      position:absolute;
+      top:8px;
+      right:8px;
+      background:linear-gradient(135deg, var(--green), #00dd88);
+      color:#000;
+      font-size:9px;
+      font-weight:900;
+      padding:3px 8px;
+      border-radius:8px;
+      letter-spacing:.08em;
+      box-shadow:0 0 15px rgba(0,255,154,.6), 0 2px 8px rgba(0,0,0,.4);
+      animation:newPulse 2s ease-in-out infinite;
+      z-index:10;
+    }
+    @keyframes newPulse{
+      0%, 100%{transform:scale(1); box-shadow:0 0 15px rgba(0,255,154,.6), 0 2px 8px rgba(0,0,0,.4);}
+      50%{transform:scale(1.05); box-shadow:0 0 25px rgba(0,255,154,.8), 0 2px 8px rgba(0,0,0,.4);}
+    }
 
     .playerbar{
       position:absolute; 
@@ -573,7 +592,90 @@ let shuffleMode = true;
 let playHistory = [];
 
 /* =======================
-   ELEMENTS
+   NEW CONTENT SYSTEM
+   ======================= */
+let newContent = { frasi: [], song: [], broadcast: [], video: [] };
+const USER_STORAGE_KEY = 'ocho_user_data';
+
+// Genera ID utente unico se non esiste
+function getUserId() {
+  let userData = localStorage.getItem(USER_STORAGE_KEY);
+  if (!userData) {
+    const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    userData = JSON.stringify({ userId, seen: {} });
+    localStorage.setItem(USER_STORAGE_KEY, userData);
+  }
+  return JSON.parse(userData);
+}
+
+// Salva file visto
+function markAsSeen(cat, filename) {
+  const userData = getUserId();
+  if (!userData.seen[cat]) userData.seen[cat] = [];
+  if (!userData.seen[cat].includes(filename)) {
+    userData.seen[cat].push(filename);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+  }
+  updateNewBadges();
+}
+
+// Controlla se un file è nuovo e non visto
+function isNewAndUnseen(cat, filename) {
+  const userData = getUserId();
+  const seenFiles = userData.seen[cat] || [];
+  return newContent[cat]?.includes(filename) && !seenFiles.includes(filename);
+}
+
+// Conta quanti file nuovi non visti ci sono
+function countUnseenNew(cat) {
+  const userData = getUserId();
+  const seenFiles = userData.seen[cat] || [];
+  return (newContent[cat] || []).filter(f => !seenFiles.includes(f)).length;
+}
+
+// Carica lista contenuti nuovi da GitHub
+async function loadNewContent() {
+  try {
+    const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/new-content.json`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      newContent = {
+        frasi: data.frasi || [],
+        song: data.song || [],
+        broadcast: data.broadcast || [],
+        video: data.video || []
+      };
+      console.log('✅ Contenuti NEW caricati:', newContent);
+      updateNewBadges();
+    }
+  } catch (e) {
+    console.log('ℹ️ Nessun file new-content.json trovato');
+  }
+}
+
+// Aggiorna badge NEW sui pulsanti
+function updateNewBadges() {
+  document.querySelectorAll('.menuBtn').forEach(btn => {
+    const cat = btn.dataset.cat;
+    const count = countUnseenNew(cat);
+    
+    // Rimuovi badge esistente
+    const existingBadge = btn.querySelector('.newBadge');
+    if (existingBadge) existingBadge.remove();
+    
+    // Aggiungi nuovo badge se ci sono contenuti non visti
+    if (count > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'newBadge';
+      badge.textContent = 'NEW';
+      btn.appendChild(badge);
+    }
+  });
+}
+
+/* =======================
+   STATE
    ======================= */
 const bg = document.getElementById("bg");
 const statusText = document.getElementById("statusText");
@@ -740,9 +842,31 @@ async function loadCat(cat) {
 }
 
 function resetDeck(cat) {
-  const n = (playlists.get(cat) || []).length;
+  const files = playlists.get(cat) || [];
+  const n = files.length;
   const indices = [...Array(n).keys()];
-  decks.set(cat, shuffleMode ? shuffle(indices) : indices);
+  
+  // Separa indici di file NEW non visti da altri
+  const newIndices = [];
+  const otherIndices = [];
+  
+  indices.forEach(idx => {
+    const filename = files[idx].split('/').pop();
+    if (isNewAndUnseen(cat, filename)) {
+      newIndices.push(idx);
+    } else {
+      otherIndices.push(idx);
+    }
+  });
+  
+  // Shuffle separatamente
+  const shuffledNew = shuffleMode ? shuffle([...newIndices]) : newIndices;
+  const shuffledOthers = shuffleMode ? shuffle([...otherIndices]) : otherIndices;
+  
+  // Metti i NEW all'inizio
+  const finalDeck = [...shuffledNew, ...shuffledOthers];
+  
+  decks.set(cat, finalDeck);
   deckPos.set(cat, 0);
 }
 
@@ -789,8 +913,11 @@ function playPath(cat, src) {
   showPlayer(true);
   trackEl.textContent = `[${cat.toUpperCase()}]`;
   
-  // const filename = src.split('/').pop();
+  const filename = src.split('/').pop();
   // filenameEl.textContent = filename;
+  
+  // Marca il file come visto
+  markAsSeen(cat, filename);
   
   // updateProgress();
   setStatus("In riproduzione…");
@@ -862,6 +989,7 @@ document.getElementById("redBtn").addEventListener("click", () => {
   introAudio.pause();
   show("menu");
   setStatus("Menu.");
+  updateNewBadges(); // Aggiorna badge NEW
 });
 
 document.getElementById("backToPills").addEventListener("click", () => {
@@ -919,6 +1047,9 @@ video.addEventListener("timeupdate", updateTime);
 /* BOOT */
 show("enter");
 setStatus("In attesa…");
+
+// Carica contenuti NEW
+loadNewContent();
 </script>
 </body>
 </html>
