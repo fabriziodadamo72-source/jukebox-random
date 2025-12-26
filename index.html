@@ -174,10 +174,15 @@
     .screen.active{opacity:1;}
     .hidden{display:none;}
     
-    /* Schermata Oracle sopra il portale */
+    /* Schermata Oracle sopra il portale - DEVE essere FIXED! */
     #screenOracle{
-      position:relative;
-      z-index:1001;
+      position:fixed !important;
+      inset:0;
+      z-index:1002;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:26px;
     }
 
     .card{
@@ -602,10 +607,9 @@
     /* Chat Oracle dentro il portale */
     .oracleCard{
       position:relative;
-      z-index:1001;
-      transform:scale(0.8);
-      opacity:0;
-      animation:cardAppear 0.8s ease-out 0.5s forwards;
+      z-index:1003;
+      width:100%;
+      max-width:720px;
     }
     
     @keyframes cardAppear{
@@ -934,7 +938,7 @@ const FOLDERS = {
 /* =======================
    ORACLE API KEY
    ======================= */
-const ANTHROPIC_API_KEY = "LA_TUA_CHIAVE_ANTHROPIC"; // ← INSERISCI QUI LA TUA API KEY ANTHROPIC
+const ANTHROPIC_API_KEY = "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";
 
 /* =======================
    STATE
@@ -1056,12 +1060,15 @@ function setStatus(msg) {
 }
 
 function show(which) {
+  console.log("🔍 show() chiamata con:", which);
   const screens = [screenEnter, screenPills, screenMenu, screenOracle];
   screens.forEach(s => {
     if (s.id === `screen${which.charAt(0).toUpperCase() + which.slice(1)}`) {
+      console.log("✅ Mostrando:", s.id);
       s.classList.remove("hidden");
       setTimeout(() => s.classList.add("active"), 10);
     } else {
+      console.log("❌ Nascondendo:", s.id);
       s.classList.remove("active");
       setTimeout(() => s.classList.add("hidden"), 400);
     }
