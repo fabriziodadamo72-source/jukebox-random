@@ -1007,6 +1007,8 @@
 </audio>
 
 <script>
+console.log("🚀 OCHO v2.0 Starting...");
+
 /* ==========================================
    CONFIGURATION
    ========================================== */
@@ -1014,34 +1016,17 @@ const GITHUB_USER = "Fabri-Fab79";
 const GITHUB_REPO = "OCHO";
 const GITHUB_BRANCH = "main";
 const ANSA_URL = "https://www.ansa.it";
-
-const FOLDERS = {
-  audio: {
-    path: "audio",
-    exts: [".mp3", ".wav", ".ogg", ".m4a"],
-    exclude: []
-  },
-  video: {
-    path: "video",
-    exts: [".mp4", ".webm", ".mov"],
-    exclude: []
-  },
-  immagini: {
-    path: "immagini",
-    exts: [".jpg", ".jpeg", ".png", ".gif", ".webp"],
-    exclude: []
-  },
-  testi: {
-    path: "testi",
-    exts: [".txt", ".md"],
-    exclude: []
-  }
-};
-
 const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}`;
 
+const FOLDERS = {
+  audio: { path: "audio", exts: [".mp3", ".wav", ".ogg", ".m4a"], exclude: [] },
+  video: { path: "video", exts: [".mp4", ".webm", ".mov"], exclude: [] },
+  immagini: { path: "immagini", exts: [".jpg", ".jpeg", ".png", ".gif", ".webp"], exclude: [] },
+  testi: { path: "testi", exts: [".txt", ".md"], exclude: [] }
+};
+
 /* ==========================================
-   GLOBAL STATE
+   STATE
    ========================================== */
 const playlists = new Map();
 const decks = new Map();
@@ -1056,17 +1041,21 @@ let currentPlaylist = [];
 let favorites = new Set();
 let newContent = {};
 let seenFiles = {};
-let firstPlayShown = localStorage.getItem('ocho_first_play_shown') === 'true';
+let currentVolume = 1;
 
 // Load from localStorage
-if (localStorage.getItem('ocho_favorites')) {
-  favorites = new Set(JSON.parse(localStorage.getItem('ocho_favorites')));
-}
-if (localStorage.getItem('ocho_seen')) {
-  seenFiles = JSON.parse(localStorage.getItem('ocho_seen'));
-}
-if (localStorage.getItem('ocho_new_content')) {
-  newContent = JSON.parse(localStorage.getItem('ocho_new_content'));
+try {
+  if (localStorage.getItem('ocho_favorites')) {
+    favorites = new Set(JSON.parse(localStorage.getItem('ocho_favorites')));
+  }
+  if (localStorage.getItem('ocho_seen')) {
+    seenFiles = JSON.parse(localStorage.getItem('ocho_seen'));
+  }
+  if (localStorage.getItem('ocho_new_content')) {
+    newContent = JSON.parse(localStorage.getItem('ocho_new_content'));
+  }
+} catch(e) {
+  console.log("localStorage error:", e);
 }
 
 /* ==========================================
@@ -1098,15 +1087,6 @@ const favBadge = document.getElementById("favBadge");
 const favCount = document.getElementById("favCount");
 const shortcuts = document.getElementById("shortcuts");
 const modeText = document.getElementById("modeText");
-
-/* ==========================================
-   UPDATE MODE TEXT
-   ========================================== */
-function updateModeText() {
-  const shuffleStatus = shuffleMode ? "ON" : "OFF";
-  const loopStatus = loopMode ? "ON" : "OFF";
-  modeText.textContent = `Casuale: ${shuffleStatus} • Loop: ${loopStatus}`;
-}
 
 /* ==========================================
    MATRIX RAIN EFFECT
@@ -1154,15 +1134,19 @@ let audioContext, analyser, dataArray, bufferLength;
 function initAudioContext() {
   if (audioContext) return;
   
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  analyser = audioContext.createAnalyser();
-  analyser.fftSize = 256;
-  bufferLength = analyser.frequencyBinCount;
-  dataArray = new Uint8Array(bufferLength);
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
 
-  const audioSource = audioContext.createMediaElementSource(audio);
-  audioSource.connect(analyser);
-  analyser.connect(audioContext.destination);
+    const audioSource = audioContext.createMediaElementSource(audio);
+    audioSource.connect(analyser);
+    analyser.connect(audioContext.destination);
+  } catch(e) {
+    console.log("AudioContext error:", e);
+  }
 }
 
 function drawVisualizer() {
@@ -1203,6 +1187,59 @@ for (let i = 0; i < 20; i++) {
   p.style.animationDelay = Math.random() * 15 + "s";
   p.style.animationDuration = (10 + Math.random() * 10) + "s";
   particlesContainer.appendChild(p);
+}
+
+/* ==========================================
+   UTILITY FUNCTIONS
+   ========================================== */
+function setStatus(msg) {
+  console.log("Status:", msg);
+  if (statusText) statusText.textContent = msg;
+}
+
+function show(screenId) {
+  console.log("Showing screen:", screenId);
+  
+  try {
+    document.querySelectorAll(".screen").forEach(s => {
+      const shouldShow = s.id === `screen-${screenId}`;
+      if (shouldShow) {
+        s.classList.remove("hidden");
+        setTimeout(() => s.classList.add("active"), 10);
+      } else {
+        s.classList.remove("active");
+        setTimeout(() => s.classList.add("hidden"), 400);
+      }
+    });
+  } catch(e) {
+    console.error("Error in show():", e);
+  }
+}
+
+function showPlayer(on) { 
+  if (playerbar) playerbar.classList.toggle("on", !!on); 
+  if (playingIndicator) playingIndicator.classList.toggle("active", !!on && isPlaying);
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function updateModeText() {
+  if (!modeText) return;
+  const shuffleStatus = shuffleMode ? "ON" : "OFF";
+  const loopStatus = loopMode ? "ON" : "OFF";
+  modeText.textContent = `Casuale: ${shuffleStatus} • Loop: ${loopStatus}`;
 }
 
 /* ==========================================
@@ -1271,51 +1308,6 @@ function updateNewBadges() {
 }
 
 /* ==========================================
-   UTILS
-   ========================================== */
-function setStatus(msg) {
-  statusText.textContent = msg;
-}
-
-function show(screenId) {
-  console.log("Showing screen:", screenId);
-  
-  try {
-    document.querySelectorAll(".screen").forEach(s => {
-      const shouldShow = s.id === `screen-${screenId}`;
-      if (shouldShow) {
-        s.classList.remove("hidden");
-        setTimeout(() => s.classList.add("active"), 10);
-      } else {
-        s.classList.remove("active");
-        setTimeout(() => s.classList.add("hidden"), 400);
-      }
-    });
-  } catch(e) {
-    console.error("Error in show():", e);
-  }
-}
-
-function showPlayer(on) { 
-  playerbar.classList.toggle("on", !!on); 
-  playingIndicator.classList.toggle("active", !!on && isPlaying);
-}
-
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function formatTime(seconds) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-/* ==========================================
    FAVORITES
    ========================================== */
 function toggleFavorite() {
@@ -1324,10 +1316,10 @@ function toggleFavorite() {
   
   if (favorites.has(path)) {
     favorites.delete(path);
-    favBtn.classList.remove('active');
+    if (favBtn) favBtn.classList.remove('active');
   } else {
     favorites.add(path);
-    favBtn.classList.add('active');
+    if (favBtn) favBtn.classList.add('active');
   }
   
   localStorage.setItem('ocho_favorites', JSON.stringify([...favorites]));
@@ -1336,8 +1328,8 @@ function toggleFavorite() {
 }
 
 function updateFavCount() {
-  favCount.textContent = favorites.size;
-  favBadge.classList.toggle('show', favorites.size > 0);
+  if (favCount) favCount.textContent = favorites.size;
+  if (favBadge) favBadge.classList.toggle('show', favorites.size > 0);
 }
 
 /* ==========================================
@@ -1377,7 +1369,7 @@ async function loadCat(cat) {
 
   if (!files.length) {
     setStatus(`Nessun file in ${cat}`);
-    trackEl.textContent = `ERRORE: Nessun file trovato in ${config.path}/`;
+    if (trackEl) trackEl.textContent = `ERRORE: Nessun file trovato in ${config.path}/`;
     showPlayer(true);
     return false;
   }
@@ -1450,17 +1442,21 @@ function drawPrev(cat) {
 }
 
 function updateProgress() {
+  if (!progressText) return;
   const pos = deckPos.get(currentCat) || 0;
   const total = (playlists.get(currentCat) || []).length;
   progressText.textContent = `File ${pos}/${total}`;
 }
 
 function updateTime() {
+  if (!timeText) return;
   const media = currentCat === "video" ? video : audio;
-  if (media.duration) {
+  if (media && media.duration) {
     timeText.textContent = `${formatTime(media.currentTime)} / ${formatTime(media.duration)}`;
-    const percent = (media.currentTime / media.duration) * 100;
-    progressBar.style.width = percent + '%';
+    if (progressBar) {
+      const percent = (media.currentTime / media.duration) * 100;
+      progressBar.style.width = percent + '%';
+    }
   }
 }
 
@@ -1472,10 +1468,9 @@ function playPath(cat, src) {
   showPlayer(true);
   
   const filename = src.split('/').pop();
-  trackEl.textContent = decodeURIComponent(filename);
+  if (trackEl) trackEl.textContent = decodeURIComponent(filename);
   
-  // Update favorite button
-  favBtn.classList.toggle('active', favorites.has(src));
+  if (favBtn) favBtn.classList.toggle('active', favorites.has(src));
   
   markAsSeen(cat, filename);
   updateProgress();
@@ -1488,13 +1483,11 @@ function playPath(cat, src) {
     video.src = src;
     video.play().then(() => {
       isPlaying = true;
-      playPauseBtn.textContent = "⏸";
-      playingIndicator.classList.add("active");
+      if (playPauseBtn) playPauseBtn.textContent = "⏸";
+      if (playingIndicator) playingIndicator.classList.add("active");
       
       if (video.requestFullscreen) {
         video.requestFullscreen().catch(() => {});
-      } else if (video.webkitRequestFullscreen) {
-        video.webkitRequestFullscreen();
       }
     }).catch(() => {});
   } else {
@@ -1509,10 +1502,10 @@ function playPath(cat, src) {
     
     audio.play().then(() => {
       isPlaying = true;
-      playPauseBtn.textContent = "⏸";
-      playingIndicator.classList.add("active");
+      if (playPauseBtn) playPauseBtn.textContent = "⏸";
+      if (playingIndicator) playingIndicator.classList.add("active");
       
-      if (cat === "audio") {
+      if (cat === "audio" && visualizerCanvas) {
         visualizerCanvas.classList.add("active");
         drawVisualizer();
       }
@@ -1521,16 +1514,6 @@ function playPath(cat, src) {
   
   playHistory.push({cat, src, time: new Date()});
   if (playHistory.length > 50) playHistory.shift();
-  
-  // Show shortcuts on first play
-  if (!firstPlayShown) {
-    setTimeout(() => {
-      shortcuts.classList.add('show');
-      setTimeout(() => shortcuts.classList.remove('show'), 8000);
-    }, 1000);
-    firstPlayShown = true;
-    localStorage.setItem('ocho_first_play_shown', 'true');
-  }
   
   renderPlaylist();
 }
@@ -1561,13 +1544,13 @@ function togglePlayPause() {
   if (isPlaying) {
     media.pause();
     isPlaying = false;
-    playPauseBtn.textContent = "▶";
-    playingIndicator.classList.remove("active");
+    if (playPauseBtn) playPauseBtn.textContent = "▶";
+    if (playingIndicator) playingIndicator.classList.remove("active");
   } else {
     media.play();
     isPlaying = true;
-    playPauseBtn.textContent = "⏸";
-    playingIndicator.classList.add("active");
+    if (playPauseBtn) playPauseBtn.textContent = "⏸";
+    if (playingIndicator) playingIndicator.classList.add("active");
   }
 }
 
@@ -1575,6 +1558,7 @@ function togglePlayPause() {
    PLAYLIST RENDERING
    ========================================== */
 function renderPlaylist() {
+  if (!playlistItems) return;
   playlistItems.innerHTML = '';
   
   const items = currentPlaylist.map((path, idx) => {
@@ -1585,8 +1569,7 @@ function renderPlaylist() {
     return {path, filename, idx, isFav, isPlaying};
   });
   
-  // Filter by search
-  const search = searchInput.value.toLowerCase();
+  const search = searchInput ? searchInput.value.toLowerCase() : '';
   const filtered = search ? 
     items.filter(item => item.filename.toLowerCase().includes(search)) : 
     items;
@@ -1622,37 +1605,40 @@ function renderPlaylist() {
 /* ==========================================
    VOLUME CONTROL
    ========================================== */
-let currentVolume = 1;
+if (volumeSlider) {
+  volumeSlider.addEventListener('click', (e) => {
+    const rect = volumeSlider.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = x / rect.width;
+    currentVolume = Math.max(0, Math.min(1, percent));
+    
+    audio.volume = currentVolume;
+    video.volume = currentVolume;
+    if (volumeLevel) volumeLevel.style.width = (currentVolume * 100) + '%';
+    
+    updateVolumeIcon();
+  });
+}
 
-volumeSlider.addEventListener('click', (e) => {
-  const rect = volumeSlider.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const percent = x / rect.width;
-  currentVolume = Math.max(0, Math.min(1, percent));
-  
-  audio.volume = currentVolume;
-  video.volume = currentVolume;
-  volumeLevel.style.width = (currentVolume * 100) + '%';
-  
-  updateVolumeIcon();
-});
-
-volumeIcon.addEventListener('click', () => {
-  if (currentVolume > 0) {
-    audio.volume = 0;
-    video.volume = 0;
-    volumeLevel.style.width = '0%';
-    currentVolume = 0;
-  } else {
-    currentVolume = 1;
-    audio.volume = 1;
-    video.volume = 1;
-    volumeLevel.style.width = '100%';
-  }
-  updateVolumeIcon();
-});
+if (volumeIcon) {
+  volumeIcon.addEventListener('click', () => {
+    if (currentVolume > 0) {
+      audio.volume = 0;
+      video.volume = 0;
+      if (volumeLevel) volumeLevel.style.width = '0%';
+      currentVolume = 0;
+    } else {
+      currentVolume = 1;
+      audio.volume = 1;
+      video.volume = 1;
+      if (volumeLevel) volumeLevel.style.width = '100%';
+    }
+    updateVolumeIcon();
+  });
+}
 
 function updateVolumeIcon() {
+  if (!volumeIcon) return;
   if (currentVolume === 0) {
     volumeIcon.textContent = '🔇';
   } else if (currentVolume < 0.5) {
@@ -1679,21 +1665,22 @@ document.querySelectorAll('.speedbtn').forEach(btn => {
 /* ==========================================
    PROGRESS BAR SEEKING
    ========================================== */
-progressWrap.addEventListener('click', (e) => {
-  const media = currentCat === "video" ? video : audio;
-  if (!media.duration) return;
-  
-  const rect = progressWrap.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const percent = x / rect.width;
-  media.currentTime = percent * media.duration;
-});
+if (progressWrap) {
+  progressWrap.addEventListener('click', (e) => {
+    const media = currentCat === "video" ? video : audio;
+    if (!media.duration) return;
+    
+    const rect = progressWrap.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = x / rect.width;
+    media.currentTime = percent * media.duration;
+  });
+}
 
 /* ==========================================
    KEYBOARD SHORTCUTS
    ========================================== */
 document.addEventListener('keydown', (e) => {
-  // Ignore if typing in search
   if (e.target === searchInput) return;
   
   switch(e.key) {
@@ -1714,7 +1701,7 @@ document.addEventListener('keydown', (e) => {
       currentVolume = Math.min(1, currentVolume + 0.1);
       audio.volume = currentVolume;
       video.volume = currentVolume;
-      volumeLevel.style.width = (currentVolume * 100) + '%';
+      if (volumeLevel) volumeLevel.style.width = (currentVolume * 100) + '%';
       updateVolumeIcon();
       break;
     case 'ArrowDown':
@@ -1722,12 +1709,12 @@ document.addEventListener('keydown', (e) => {
       currentVolume = Math.max(0, currentVolume - 0.1);
       audio.volume = currentVolume;
       video.volume = currentVolume;
-      volumeLevel.style.width = (currentVolume * 100) + '%';
+      if (volumeLevel) volumeLevel.style.width = (currentVolume * 100) + '%';
       updateVolumeIcon();
       break;
     case 'm':
     case 'M':
-      volumeIcon.click();
+      if (volumeIcon) volumeIcon.click();
       break;
     case 'f':
     case 'F':
@@ -1741,19 +1728,21 @@ document.addEventListener('keydown', (e) => {
       break;
     case 's':
     case 'S':
-      shuffleBtn.click();
+      if (shuffleBtn) shuffleBtn.click();
       break;
     case 'l':
     case 'L':
-      loopBtn.click();
+      if (loopBtn) loopBtn.click();
       break;
     case 'p':
     case 'P':
-      playlistView.classList.toggle('open');
+      if (playlistView) playlistView.classList.toggle('open');
       break;
     case '?':
-      shortcuts.classList.toggle('show');
-      setTimeout(() => shortcuts.classList.remove('show'), 5000);
+      if (shortcuts) {
+        shortcuts.classList.toggle('show');
+        setTimeout(() => shortcuts.classList.remove('show'), 5000);
+      }
       break;
   }
 });
@@ -1765,7 +1754,6 @@ document.getElementById("enterBtn").addEventListener("click", () => {
   console.log("Enter button clicked");
   setStatus("Avvio…");
   
-  // Try to play intro audio, but don't block if it fails
   try {
     introAudio.currentTime = 0;
     introAudio.play().catch(err => console.log("Audio intro skipped:", err));
@@ -1773,17 +1761,15 @@ document.getElementById("enterBtn").addEventListener("click", () => {
     console.log("Audio intro error:", e);
   }
   
-  // Try to load background image, but don't block if it fails
   try {
     bg.style.backgroundImage =
       `radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.12), transparent 60%),
        radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.10), transparent 60%),
-       url("https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/assets/inizio.jpeg") center/cover no-repeat`;
+       url("${RAW_BASE}/assets/inizio.jpeg") center/cover no-repeat`;
   } catch(e) {
     console.log("Background image error:", e);
   }
   
-  // Always proceed to next screen
   setTimeout(() => {
     show("pills");
     setStatus("Pronto.");
@@ -1819,41 +1805,55 @@ document.getElementById("nextBtn").addEventListener("click", () => {
   playNext(currentCat);
 });
 
-playPauseBtn.addEventListener("click", togglePlayPause);
+if (playPauseBtn) {
+  playPauseBtn.addEventListener("click", togglePlayPause);
+}
 
-shuffleBtn.addEventListener("click", () => {
-  shuffleMode = !shuffleMode;
-  shuffleBtn.classList.toggle("active", shuffleMode);
-  resetDeck(currentCat);
-  setStatus(shuffleMode ? "Casuale ON" : "Casuale OFF");
-  updateModeText();
-});
+if (shuffleBtn) {
+  shuffleBtn.addEventListener("click", () => {
+    shuffleMode = !shuffleMode;
+    shuffleBtn.classList.toggle("active", shuffleMode);
+    resetDeck(currentCat);
+    setStatus(shuffleMode ? "Casuale ON" : "Casuale OFF");
+    updateModeText();
+  });
+}
 
-loopBtn.addEventListener("click", () => {
-  loopMode = !loopMode;
-  loopBtn.classList.toggle("active", loopMode);
-  setStatus(loopMode ? "Loop ON" : "Loop OFF");
-  updateModeText();
-});
+if (loopBtn) {
+  loopBtn.addEventListener("click", () => {
+    loopMode = !loopMode;
+    loopBtn.classList.toggle("active", loopMode);
+    setStatus(loopMode ? "Loop ON" : "Loop OFF");
+    updateModeText();
+  });
+}
 
 document.getElementById("playlistBtn").addEventListener("click", () => {
-  playlistView.classList.toggle('open');
-  if (playlistView.classList.contains('open')) {
-    renderPlaylist();
+  if (playlistView) {
+    playlistView.classList.toggle('open');
+    if (playlistView.classList.contains('open')) {
+      renderPlaylist();
+    }
   }
 });
 
 document.getElementById("closePlaylist").addEventListener("click", () => {
-  playlistView.classList.remove('open');
+  if (playlistView) playlistView.classList.remove('open');
 });
 
-favBtn.addEventListener("click", toggleFavorite);
+if (favBtn) {
+  favBtn.addEventListener("click", toggleFavorite);
+}
 
-searchInput.addEventListener('input', renderPlaylist);
+if (searchInput) {
+  searchInput.addEventListener('input', renderPlaylist);
+}
 
 document.getElementById("helpBtn").addEventListener("click", () => {
-  shortcuts.classList.add('show');
-  setTimeout(() => shortcuts.classList.remove('show'), 5000);
+  if (shortcuts) {
+    shortcuts.classList.add('show');
+    setTimeout(() => shortcuts.classList.remove('show'), 5000);
+  }
 });
 
 document.getElementById("stopBtn").addEventListener("click", () => {
@@ -1863,8 +1863,8 @@ document.getElementById("stopBtn").addEventListener("click", () => {
   video.src = "";
   
   isPlaying = false;
-  playPauseBtn.textContent = "▶";
-  visualizerCanvas.classList.remove("active");
+  if (playPauseBtn) playPauseBtn.textContent = "▶";
+  if (visualizerCanvas) visualizerCanvas.classList.remove("active");
   
   if (document.fullscreenElement) {
     document.exitFullscreen();
@@ -1898,41 +1898,38 @@ video.addEventListener("timeupdate", updateTime);
 
 audio.addEventListener("play", () => {
   isPlaying = true;
-  playPauseBtn.textContent = "⏸";
-  playingIndicator.classList.add("active");
+  if (playPauseBtn) playPauseBtn.textContent = "⏸";
+  if (playingIndicator) playingIndicator.classList.add("active");
 });
 
 audio.addEventListener("pause", () => {
   isPlaying = false;
-  playPauseBtn.textContent = "▶";
-  playingIndicator.classList.remove("active");
+  if (playPauseBtn) playPauseBtn.textContent = "▶";
+  if (playingIndicator) playingIndicator.classList.remove("active");
 });
 
 video.addEventListener("play", () => {
   isPlaying = true;
-  playPauseBtn.textContent = "⏸";
-  playingIndicator.classList.add("active");
+  if (playPauseBtn) playPauseBtn.textContent = "⏸";
+  if (playingIndicator) playingIndicator.classList.add("active");
 });
 
 video.addEventListener("pause", () => {
   isPlaying = false;
-  playPauseBtn.textContent = "▶";
-  playingIndicator.classList.remove("active");
+  if (playPauseBtn) playPauseBtn.textContent = "▶";
+  if (playingIndicator) playingIndicator.classList.remove("active");
 });
 
 /* ==========================================
    BOOT
    ========================================== */
-console.log("🚀 OCHO v2.0 Starting...");
-
 try {
   show("enter");
   setStatus("In attesa…");
-  shuffleBtn.classList.add("active");
+  if (shuffleBtn) shuffleBtn.classList.add("active");
   updateFavCount();
   updateModeText();
 
-  // Resize visualizer canvas
   visualizerCanvas.width = window.innerWidth;
   visualizerCanvas.height = 120;
 
@@ -1940,7 +1937,6 @@ try {
     visualizerCanvas.width = window.innerWidth;
   });
 
-  // Load new content
   loadNewContent().catch(err => console.log("New content load failed:", err));
   
   console.log("✅ OCHO v2.0 Ready!");
@@ -1951,3 +1947,4 @@ try {
 
 </body>
 </html>
+
