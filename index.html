@@ -709,13 +709,17 @@ let isListening = false;
 let recognition = null;
 let lastOracleResponse = "";
 
-// Initialize Speech Recognition
-if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.lang = 'it-IT';
-  recognition.continuous = false;
-  recognition.interimResults = false;
+// Speech Recognition verrà inizializzato solo quando necessario (lazy loading)
+function initSpeechRecognition() {
+  if (recognition) return; // Già inizializzato
+  
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = 'it-IT';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+  }
 }
 
 /* =======================
@@ -1154,6 +1158,9 @@ Assorbi i concetti, parlali come tuoi, sii breve e diretto.`;
 }
 
 function startListening() {
+  // Inizializza il microfono solo ora (lazy loading)
+  initSpeechRecognition();
+  
   if (!recognition) {
     addSystemMessage('❌ Riconoscimento vocale non supportato in questo browser');
     return;
