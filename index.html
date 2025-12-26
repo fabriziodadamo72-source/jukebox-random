@@ -502,17 +502,123 @@
       100%{opacity:0; transform:translateY(-40px) scale(0);}
     }
     
-    /* Chat Oracle */
+    /* PORTALE MATRIX - Effetto wormhole */
+    .portal-overlay{
+      position:fixed;
+      inset:0;
+      background:radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.95) 70%);
+      z-index:1000;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 0.8s ease;
+    }
+    
+    .portal-overlay.active{
+      opacity:1;
+      pointer-events:all;
+    }
+    
+    .wormhole{
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%, -50%) scale(0);
+      width:600px;
+      height:600px;
+      border-radius:50%;
+      background:radial-gradient(circle, 
+        rgba(0,255,154,0.2) 0%,
+        rgba(0,255,154,0.1) 30%,
+        transparent 70%);
+      box-shadow:
+        0 0 60px rgba(0,255,154,0.6),
+        0 0 120px rgba(0,255,154,0.4),
+        inset 0 0 60px rgba(0,255,154,0.3);
+      animation:wormholeOpen 1s ease-out forwards;
+    }
+    
+    @keyframes wormholeOpen{
+      0%{transform:translate(-50%, -50%) scale(0) rotate(0deg); opacity:0;}
+      50%{transform:translate(-50%, -50%) scale(1.2) rotate(180deg); opacity:1;}
+      100%{transform:translate(-50%, -50%) scale(1) rotate(360deg); opacity:1;}
+    }
+    
+    .wormhole::before{
+      content:'';
+      position:absolute;
+      inset:20px;
+      border-radius:50%;
+      border:2px solid rgba(0,255,154,0.4);
+      animation:wormholeRing 2s linear infinite;
+    }
+    
+    .wormhole::after{
+      content:'';
+      position:absolute;
+      inset:40px;
+      border-radius:50%;
+      border:1px solid rgba(0,255,154,0.3);
+      animation:wormholeRing 3s linear infinite reverse;
+    }
+    
+    @keyframes wormholeRing{
+      0%{transform:rotate(0deg) scale(1); opacity:0.8;}
+      50%{transform:rotate(180deg) scale(0.95); opacity:0.4;}
+      100%{transform:rotate(360deg) scale(1); opacity:0.8;}
+    }
+    
+    /* Particelle del portale */
+    .portal-particle{
+      position:absolute;
+      width:3px;
+      height:3px;
+      background:var(--green);
+      border-radius:50%;
+      box-shadow:0 0 10px var(--green);
+      animation:portalParticle 3s ease-out infinite;
+    }
+    
+    @keyframes portalParticle{
+      0%{
+        transform:translate(0, 0) scale(0);
+        opacity:0;
+      }
+      30%{
+        opacity:1;
+      }
+      100%{
+        transform:translate(var(--tx), var(--ty)) scale(1);
+        opacity:0;
+      }
+    }
+    
+    /* Chat Oracle dentro il portale */
+    .oracleCard{
+      position:relative;
+      z-index:1001;
+      transform:scale(0.8);
+      opacity:0;
+      animation:cardAppear 0.8s ease-out 0.5s forwards;
+    }
+    
+    @keyframes cardAppear{
+      0%{transform:scale(0.8); opacity:0;}
+      100%{transform:scale(1); opacity:1;}
+    }
+    
     .oracleChat{
       max-height:340px;
       overflow-y:auto;
-      background:rgba(0,0,0,.4);
-      border:1px solid rgba(0,255,154,.2);
+      background:rgba(0,0,0,.6);
+      border:1px solid rgba(0,255,154,.3);
       border-radius:12px;
       padding:16px;
       margin:16px 0;
       font-size:14px;
       line-height:1.6;
+      box-shadow:
+        0 0 20px rgba(0,255,154,0.2),
+        inset 0 0 20px rgba(0,255,154,0.1);
     }
     
     .oracleChat::-webkit-scrollbar{width:6px;}
@@ -541,6 +647,7 @@
       background:rgba(0,255,154,.15);
       border:1px solid rgba(0,255,154,.3);
       color:var(--green);
+      text-shadow:0 0 10px rgba(0,255,154,0.3);
     }
     
     .message.system{
@@ -703,7 +810,7 @@
 
       <!-- SCREEN: ORACLE OCHO -->
       <div class="screen hidden" id="screenOracle">
-        <div class="card">
+        <div class="card oracleCard">
           <h1 class="title">🔮 OCHO - ORACOLO DEL SISTEMA</h1>
           <p class="subtitle">Fai la tua domanda usando il microfono. OCHO risponderà con la voce di Jack.</p>
 
@@ -748,6 +855,11 @@
       <!-- AUDIO INTRO -->
       <audio id="introAudio" preload="auto" src="mp3/inizio.mp3"></audio>
     </div>
+  </div>
+
+  <!-- PORTALE MATRIX per OCHO -->
+  <div class="portal-overlay" id="portalOverlay">
+    <div class="wormhole" id="wormhole"></div>
   </div>
 
 <script>
@@ -1356,6 +1468,53 @@ const micBtn = document.getElementById("micBtn");
 const clearChatBtn = document.getElementById("clearChatBtn");
 const backFromOracle = document.getElementById("backFromOracle");
 const ochoBtn = document.getElementById("ochoBtn");
+const portalOverlay = document.getElementById("portalOverlay");
+const wormhole = document.getElementById("wormhole");
+
+// Apri portale Matrix
+function openPortal() {
+  // Attiva il portale
+  portalOverlay.classList.add('active');
+  
+  // Crea particelle del portale
+  for (let i = 0; i < 50; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'portal-particle';
+    
+    // Posizione casuale dal centro
+    const angle = (Math.random() * 360) * Math.PI / 180;
+    const distance = Math.random() * 300;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance;
+    
+    particle.style.setProperty('--tx', `${tx}px`);
+    particle.style.setProperty('--ty', `${ty}px`);
+    particle.style.left = '50%';
+    particle.style.top = '50%';
+    particle.style.animationDelay = `${Math.random() * 0.5}s`;
+    
+    wormhole.appendChild(particle);
+  }
+  
+  // Mostra la schermata Oracle dopo l'animazione
+  setTimeout(() => {
+    show("screenOracle");
+    setStatus("OCHO attivo");
+    if (!libraryLoaded) {
+      loadLibrary();
+    }
+  }, 800);
+}
+
+// Chiudi portale
+function closePortal() {
+  portalOverlay.classList.remove('active');
+  
+  // Pulisci particelle
+  setTimeout(() => {
+    wormhole.innerHTML = '';
+  }, 800);
+}
 
 // Crea stelline magiche sul pulsante OCHO
 function createSparkles() {
@@ -1629,16 +1788,16 @@ function stopListening() {
 
 // Event Listeners Oracle
 ochoBtn.addEventListener("click", () => {
-  show("oracle");
-  setStatus("OCHO attivo");
-  if (!libraryLoaded) {
-    loadLibrary();
-  }
+  openPortal();
 });
 
 backFromOracle.addEventListener("click", () => {
-  show("menu");
-  setStatus("Menu");
+  closePortal();
+  setTimeout(() => {
+    show("menu");
+    setStatus("Menu");
+  }, 500);
+  
   if (isListening) {
     stopListening();
   }
