@@ -980,6 +980,7 @@ const playingIndicator = document.getElementById("playingIndicator");
 const screenEnter = document.getElementById("screenEnter");
 const screenPills = document.getElementById("screenPills");
 const screenMenu = document.getElementById("screenMenu");
+const screenOracle = document.getElementById("screenOracle");
 
 const introAudio = document.getElementById("introAudio");
 
@@ -1055,7 +1056,7 @@ function setStatus(msg) {
 }
 
 function show(which) {
-  const screens = [screenEnter, screenPills, screenMenu];
+  const screens = [screenEnter, screenPills, screenMenu, screenOracle];
   screens.forEach(s => {
     if (s.id === `screen${which.charAt(0).toUpperCase() + which.slice(1)}`) {
       s.classList.remove("hidden");
