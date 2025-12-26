@@ -726,49 +726,61 @@ function formatTime(seconds) {
 }
 
 /* =======================
-   AUTOMATIC NEW DETECTION (Date-based)
+   AUTOMATIC NEW DETECTION (SHA-based + Timestamp)
    ======================= */
-const NEW_FILE_DAYS = 30; // File è NEW se caricato negli ultimi 30 giorni
+const NEW_FILE_DAYS = 30; // File è NEW per max 30 giorni da quando l'hai scoperto
 
-function saveSnapshotWithDates(cat, filesWithDates) {
-  // Salva i file con le loro date di ultimo commit
+function saveSnapshotWithHashes(cat, filesWithHashes) {
+  // Salva SHA dei file + timestamp di quando li hai visti la prima volta
   if (!fileSnapshots[cat]) {
     fileSnapshots[cat] = {};
   }
   
-  filesWithDates.forEach(fileObj => {
-    fileSnapshots[cat][fileObj.name] = fileObj.lastModified;
+  const now = new Date().toISOString();
+  
+  filesWithHashes.forEach(fileObj => {
+    // Se è un file già conosciuto, mantieni il timestamp originale
+    if (!fileSnapshots[cat][fileObj.name]) {
+      fileSnapshots[cat][fileObj.name] = {
+        sha: fileObj.sha,
+        firstSeen: now  // Quando l'hai visto la prima volta
+      };
+    } else {
+      // File esistente: aggiorna SHA se cambiato
+      fileSnapshots[cat][fileObj.name].sha = fileObj.sha;
+    }
   });
   
   localStorage.setItem('ocho_snapshots', JSON.stringify(fileSnapshots));
-  console.log(`📸 Snapshot con date salvato per ${cat}:`, filesWithDates.length, 'file');
+  console.log(`📸 Snapshot salvato per ${cat}:`, filesWithHashes.length, 'file');
 }
 
-function isFileRecent(lastModifiedDate) {
-  // Controlla se un file è stato modificato negli ultimi X giorni
-  if (!lastModifiedDate) return false;
+function isFileRecentlyDiscovered(firstSeenDate) {
+  // Controlla se il file è stato scoperto negli ultimi X giorni
+  if (!firstSeenDate) return true; // Se non ha data, consideralo nuovo
   
-  const fileDate = new Date(lastModifiedDate);
+  const discoveredDate = new Date(firstSeenDate);
   const now = new Date();
-  const daysDiff = (now - fileDate) / (1000 * 60 * 60 * 24);
+  const daysDiff = (now - discoveredDate) / (1000 * 60 * 60 * 24);
   
   return daysDiff <= NEW_FILE_DAYS;
 }
 
 function isNewAndUnseen(cat, filename) {
   // Un file è "NEW e non visto" se:
-  // 1. È stato caricato/modificato negli ultimi 30 giorni
+  // 1. È stato scoperto negli ultimi 30 giorni
   // 2. L'utente NON l'ha ancora ascoltato
   
   if (!fileSnapshots[cat] || !fileSnapshots[cat][filename]) {
-    return false;
+    // File mai visto prima = NEW
+    return true;
   }
   
-  const lastModified = fileSnapshots[cat][filename];
-  const isRecent = isFileRecent(lastModified);
+  const fileInfo = fileSnapshots[cat][filename];
+  const isRecentlyDiscovered = isFileRecentlyDiscovered(fileInfo.firstSeen);
   const hasBeenSeen = seenFiles[cat] && seenFiles[cat].includes(filename);
   
-  return isRecent && !hasBeenSeen;
+  return isRecentlyDiscovered && !hasBeenSeen;
 }
 
 function markAsSeen(cat, filename) {
@@ -784,18 +796,18 @@ function markAsSeen(cat, filename) {
 }
 
 function updateNewBadges() {
-  // Aggiorna i badge con il conteggio dei file recenti non ascoltati
+  // Aggiorna i badge con il conteggio dei file nuovi non ascoltati
   for (const cat in fileSnapshots) {
     const badge = document.querySelector(`[data-badge="${cat}"]`);
     if (!badge) continue;
     
     const filesInCat = fileSnapshots[cat];
     
-    // Conta file recenti (ultimi 30 giorni) NON ancora visti
+    // Conta file recentemente scoperti NON ancora visti
     let newUnseenCount = 0;
     for (const filename in filesInCat) {
-      const lastModified = filesInCat[filename];
-      const isRecent = isFileRecent(lastModified);
+      const fileInfo = filesInCat[filename];
+      const isRecent = isFileRecentlyDiscovered(fileInfo.firstSeen);
       const hasBeenSeen = seenFiles[cat] && seenFiles[cat].includes(filename);
       
       if (isRecent && !hasBeenSeen) {
@@ -806,7 +818,7 @@ function updateNewBadges() {
     if (newUnseenCount > 0) {
       badge.style.display = "block";
       badge.textContent = `${newUnseenCount} NEW`;
-      console.log(`🆕 ${cat}: ${newUnseenCount} file recenti non visti`);
+      console.log(`🆕 ${cat}: ${newUnseenCount} file nuovi non visti`);
     } else {
       badge.style.display = "none";
     }
@@ -829,6 +841,31 @@ async function preloadAllCategories() {
   updateNewBadges();
 }
 
+async function loadCategoriesInBackground() {
+  // Carica progressivamente solo le categorie NON ancora caricate
+  console.log("🔄 Caricamento progressivo in background...");
+  
+  for (const cat in FOLDERS) {
+    // Salta se già caricata
+    if (playlists.has(cat)) {
+      console.log(`⏭️ ${cat} già caricata`);
+      continue;
+    }
+    
+    try {
+      console.log(`⏳ Caricamento ${cat}...`);
+      await loadCat(cat);
+      
+      // Pausa tra categorie per evitare rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch(e) {
+      console.log(`❌ Errore ${cat}:`, e);
+    }
+  }
+  
+  console.log("✅ Caricamento background completato!");
+}
+
 /* =======================
    GITHUB API
    ======================= */
@@ -839,39 +876,17 @@ async function fetchGitHubFolder(folderPath) {
     if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
     const data = await res.json();
     
-    // Ottieni info sui file con le date
-    const filesWithDates = await Promise.all(
-      data
-        .filter(item => item.type === "file")
-        .map(async (item) => {
-          try {
-            // Ottieni l'ultimo commit per questo file
-            const commitUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/commits?path=${folderPath}/${item.name}&page=1&per_page=1`;
-            const commitRes = await fetch(commitUrl);
-            
-            let lastModified = null;
-            if (commitRes.ok) {
-              const commits = await commitRes.json();
-              if (commits.length > 0) {
-                lastModified = commits[0].commit.committer.date;
-              }
-            }
-            
-            return {
-              name: item.name,
-              lastModified: lastModified
-            };
-          } catch(e) {
-            console.log(`Errore date per ${item.name}:`, e);
-            return {
-              name: item.name,
-              lastModified: null
-            };
-          }
-        })
-    );
+    // Ottieni file con SHA (hash) invece di date commit
+    // SHA cambia quando il file cambia - più veloce!
+    const filesWithHashes = data
+      .filter(item => item.type === "file")
+      .map(item => ({
+        name: item.name,
+        sha: item.sha,  // Hash unico del file
+        size: item.size
+      }));
     
-    return filesWithDates;
+    return filesWithHashes;
   } catch (e) {
     console.error("Errore fetch GitHub:", e);
     return [];
@@ -892,17 +907,17 @@ async function loadCat(cat) {
     return false;
   }
 
-  const allFilesWithDates = await fetchGitHubFolder(config.path);
+  const allFilesWithHashes = await fetchGitHubFolder(config.path);
   
   // Filtra per estensione ed esclusioni
-  let filesWithDates = allFilesWithDates.filter(fileObj => {
+  let filesWithHashes = allFilesWithHashes.filter(fileObj => {
     const lower = fileObj.name.toLowerCase();
     const hasExt = config.exts.some(ext => lower.endsWith(ext));
     const isExcluded = (config.exclude || []).some(ex => fileObj.name === ex);
     return hasExt && !isExcluded;
   });
 
-  if (!filesWithDates.length) {
+  if (!filesWithHashes.length) {
     setStatus(`Nessun file in ${cat}`);
     trackEl.textContent = `ERRORE: Nessun file trovato in ${config.path}/`;
     showPlayer(true);
@@ -910,11 +925,11 @@ async function loadCat(cat) {
   }
 
   // Crea array di percorsi completi
-  const files = filesWithDates.map(f => `${config.path}/${f.name}`);
+  const files = filesWithHashes.map(f => `${config.path}/${f.name}`);
   playlists.set(cat, files);
   
-  // SNAPSHOT CON DATE: salva nome file + data ultima modifica
-  saveSnapshotWithDates(cat, filesWithDates);
+  // SNAPSHOT CON HASH: salva nome file + SHA + timestamp
+  saveSnapshotWithHashes(cat, filesWithHashes);
   
   resetDeck(cat);
   
@@ -1072,8 +1087,13 @@ document.getElementById("redBtn").addEventListener("click", () => {
   show("menu");
   setStatus("Menu.");
   
-  // Pre-carica tutte le categorie in background per calcolare i badge NEW
-  preloadAllCategories();
+  // Mostra badge per categorie già caricate
+  updateNewBadges();
+  
+  // Carica progressivamente le categorie NON ancora caricate in background
+  setTimeout(() => {
+    loadCategoriesInBackground();
+  }, 500);
 });
 
 document.getElementById("backToPills").addEventListener("click", () => {
@@ -1132,8 +1152,9 @@ video.addEventListener("timeupdate", updateTime);
 show("enter");
 setStatus("In attesa…");
 
-console.log("🚀 OCHO con Auto-Detection NEW basato su DATE attivo!");
-console.log(`📅 File NEW = caricati negli ultimi ${NEW_FILE_DAYS} giorni`);
+console.log("🚀 OCHO con Auto-Detection NEW OTTIMIZZATO!");
+console.log(`📅 File NEW = scoperti negli ultimi ${NEW_FILE_DAYS} giorni`);
+console.log("⚡ Caricamento ON-DEMAND (no rate limiting!)");
 console.log("📊 Categorie tracciate:", Object.keys(fileSnapshots).length);
 </script>
 </body>
