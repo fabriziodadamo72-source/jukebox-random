@@ -936,9 +936,11 @@ const FOLDERS = {
 };
 
 /* =======================
-   ORACLE API KEY
+   ORACLE API KEY - GROQ (QUASI GRATIS!)
    ======================= */
-const ANTHROPIC_API_KEY = "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";
+// GROQ API - Tier gratuito disponibile!
+// Crea la tua chiave su: https://console.groq.com/keys
+const GROQ_API_KEY = "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"; // ✅ CHIAVE INSERITA!
 
 /* =======================
    STATE
@@ -1677,15 +1679,15 @@ function addSystemMessage(text) {
   addMessage(text, 'system');
 }
 
-// Chiedi a Claude (Anthropic API)
+// Chiedi a OCHO (GROQ API - Llama 3.1 70B)
 async function askOracle(question) {
   if (!question || question.trim() === '') return;
   
   addMessage(question, 'user');
   addSystemMessage('🔮 OCHO sta elaborando...');
   
-  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === "LA_TUA_CHIAVE_ANTHROPIC") {
-    addMessage("⚠️ API Key Anthropic non configurata! Inserisci la tua chiave nel codice.", 'oracle');
+  if (!GROQ_API_KEY || GROQ_API_KEY === "LA_TUA_CHIAVE_GROQ") {
+    addMessage("⚠️ API Key GROQ non configurata! Crea la tua chiave gratuita su console.groq.com/keys", 'oracle');
     return;
   }
   
@@ -1720,30 +1722,56 @@ Esempi:
 Assorbi i concetti, parlali come tuoi, sii breve e diretto.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // GROQ API usa formato OpenAI-compatible
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'Authorization': `Bearer ${GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'llama-3.1-70b-versatile', // Modello Llama 3.1 70B - ottima qualità!
         max_tokens: 300,
-        messages: [{
-          role: 'user',
-          content: question
-        }],
-        system: systemPrompt
+        temperature: 0.7,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: question
+          }
+        ]
       })
     });
     
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`GROQ API Error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
     }
     
     const data = await response.json();
-    const answer = data.content[0].text;
+    const answer = data.choices[0].message.content;
+    
+    // Rimuovi il messaggio di caricamento
+    const loadingMsg = oracleChat.querySelector('.message.system:last-child');
+    if (loadingMsg && loadingMsg.textContent.includes('elaborando')) {
+      loadingMsg.remove();
+    }
+    
+    // Mostra risposta con effetto typewriter magico
+    showMagicTypewriter(answer);
+    
+  } catch (error) {
+    console.error('Errore GROQ API:', error);
+    const loadingMsg = oracleChat.querySelector('.message.system:last-child');
+    if (loadingMsg && loadingMsg.textContent.includes('elaborando')) {
+      loadingMsg.remove();
+    }
+    addMessage(`❌ Errore: ${error.message}`, 'system');
+  }
+}
     
     // Rimuovi il messaggio di caricamento
     const loadingMsg = oracleChat.querySelector('.message.system:last-child');
