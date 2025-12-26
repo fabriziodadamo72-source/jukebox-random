@@ -1063,18 +1063,36 @@ function setStatus(msg) {
 
 function show(which) {
   console.log("🔍 show() chiamata con:", which);
+  console.log("📋 Schermate disponibili:", [screenEnter, screenPills, screenMenu, screenOracle].map(s => s?.id));
+  
   const screens = [screenEnter, screenPills, screenMenu, screenOracle];
+  
   screens.forEach(s => {
-    if (s.id === `screen${which.charAt(0).toUpperCase() + which.slice(1)}`) {
+    if (!s) {
+      console.error("❌ Schermata undefined!");
+      return;
+    }
+    
+    const targetId = `screen${which.charAt(0).toUpperCase() + which.slice(1)}`;
+    console.log(`🔎 Confronto ${s.id} con ${targetId}`);
+    
+    if (s.id === targetId) {
       console.log("✅ Mostrando:", s.id);
       s.classList.remove("hidden");
-      setTimeout(() => s.classList.add("active"), 10);
+      setTimeout(() => {
+        s.classList.add("active");
+        console.log("✅ Classe active aggiunta a:", s.id);
+      }, 10);
     } else {
       console.log("❌ Nascondendo:", s.id);
       s.classList.remove("active");
-      setTimeout(() => s.classList.add("hidden"), 400);
+      setTimeout(() => {
+        s.classList.add("hidden");
+      }, 400);
     }
   });
+  
+  console.log("✅ show() completata!");
 }
 
 function showPlayer(on) { 
@@ -1437,15 +1455,17 @@ async function playPrev(cat) {
    ======================= */
 
 document.getElementById("enterBtn").addEventListener("click", () => {
+  console.log("✅ ACCEDI cliccato");
   setStatus("Avvio…");
-  introAudio.currentTime = 0;
-  introAudio.play().catch(() => {});
+  // Rimosso audio che potrebbe bloccare
   bg.style.backgroundImage =
     `radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.12), transparent 60%),
      radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.10), transparent 60%),
-     url("assets/inizio.jpeg") center/cover no-repeat`;
+     #000`;
+  console.log("✅ Chiamo show(pills)");
   show("pills");
   setStatus("Pronto.");
+  console.log("✅ Fatto!");
 });
 
 document.getElementById("blueBtn").addEventListener("click", () => {
