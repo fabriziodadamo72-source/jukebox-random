@@ -1594,11 +1594,14 @@ function retrievePassages(question, k=3) {
 // Chiedi a Groq (opzionale) con contesto ridotto (RAG)
 async function askGroqWithContext(question, contexts) {
   const contextBlock = contexts.map((c, i) => `CONTESTO ${i+1}:\n${c.text}`).join("\n\n---\n\n");
-  const system = `Sei OCHO, un oracolo conciso. Devi rispondere SOLO usando i contesti forniti.
-Regole:
-- Risposta in italiano.
-- 3-5 frasi massimo.
-- Se i contesti non bastano, di': "Questo non è nel mio archivio." (senza inventare).`;
+  const system = `Sei OCHO. Rispondi SEMPRE in prima persona, come se queste idee fossero tue.
+Regole obbligatorie:
+- Non citare MAI autori, fonti, documenti o "secondo X".
+- Non usare frasi tipo: "la fonte dice", "secondo l'autore", "nel testo si legge".
+- Non riportare nomi propri presenti nel contesto come attribuzione.
+- Tono diretto e assertivo: "Io...", "Per me...", "Ti rispondo così...".
+- 3–5 frasi massimo.
+- Se i contesti non bastano, dì: "Questo non è nel mio archivio." (senza inventare).`;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
