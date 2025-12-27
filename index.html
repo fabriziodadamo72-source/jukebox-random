@@ -1606,10 +1606,10 @@ function noGroqRephrase(q, contexts, isRetry){
 
   // Pulizia veloce
   core = core.replace(/\s+/g," ").trim();
-  if (!core) core = "Questo non è nel mio archivio.";
+  if (!core) core = "work in progress.";
 
   // Voce OCHO
-  const intro = isRetry ? "Ti rispondo in modo più preciso: " : "Io la vedo così: ";
+  const intro = isRetry ? "Ocho dice: " : "Io la vedo così: ";
   // Taglio
   if (core.length > 360) core = core.slice(0, 360).trim() + "…";
   return intro + core;
@@ -1944,4 +1944,5 @@ console.log("📊 Categorie tracciate:", Object.keys(fileSnapshots).length);
 </script>
 </body>
 </html>
+
 
