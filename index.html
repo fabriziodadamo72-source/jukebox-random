@@ -11,7 +11,8 @@
       --blue:#1f6fff; 
       --red:#ff2d2d;
       --dark:#0a0e0d;
-    }
+    
+      --purple:#a855f7; }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;background:var(--dark);color:#eafff6;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
     body{overflow:hidden}
@@ -173,17 +174,6 @@
     }
     .screen.active{opacity:1;}
     .hidden{display:none;}
-    
-    /* Schermata Oracle sopra il portale - DEVE essere FIXED! */
-    #screenOracle{
-      position:fixed !important;
-      inset:0;
-      z-index:1002;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:26px;
-    }
 
     .card{
       width:min(720px,92%);
@@ -513,123 +503,17 @@
       100%{opacity:0; transform:translateY(-40px) scale(0);}
     }
     
-    /* PORTALE MATRIX - Effetto wormhole */
-    .portal-overlay{
-      position:fixed;
-      inset:0;
-      background:radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.95) 70%);
-      z-index:1000;
-      opacity:0;
-      pointer-events:none;
-      transition:opacity 0.8s ease;
-    }
-    
-    .portal-overlay.active{
-      opacity:1;
-      pointer-events:none; /* Cambiato da 'all' a 'none' - il portale è solo sfondo! */
-    }
-    
-    .wormhole{
-      position:absolute;
-      top:50%;
-      left:50%;
-      transform:translate(-50%, -50%) scale(0);
-      width:600px;
-      height:600px;
-      border-radius:50%;
-      background:radial-gradient(circle, 
-        rgba(0,255,154,0.2) 0%,
-        rgba(0,255,154,0.1) 30%,
-        transparent 70%);
-      box-shadow:
-        0 0 60px rgba(0,255,154,0.6),
-        0 0 120px rgba(0,255,154,0.4),
-        inset 0 0 60px rgba(0,255,154,0.3);
-      animation:wormholeOpen 1s ease-out forwards;
-      pointer-events:none; /* Il wormhole non blocca i click */
-    }
-    
-    @keyframes wormholeOpen{
-      0%{transform:translate(-50%, -50%) scale(0) rotate(0deg); opacity:0;}
-      50%{transform:translate(-50%, -50%) scale(1.2) rotate(180deg); opacity:1;}
-      100%{transform:translate(-50%, -50%) scale(1) rotate(360deg); opacity:1;}
-    }
-    
-    .wormhole::before{
-      content:'';
-      position:absolute;
-      inset:20px;
-      border-radius:50%;
-      border:2px solid rgba(0,255,154,0.4);
-      animation:wormholeRing 2s linear infinite;
-    }
-    
-    .wormhole::after{
-      content:'';
-      position:absolute;
-      inset:40px;
-      border-radius:50%;
-      border:1px solid rgba(0,255,154,0.3);
-      animation:wormholeRing 3s linear infinite reverse;
-    }
-    
-    @keyframes wormholeRing{
-      0%{transform:rotate(0deg) scale(1); opacity:0.8;}
-      50%{transform:rotate(180deg) scale(0.95); opacity:0.4;}
-      100%{transform:rotate(360deg) scale(1); opacity:0.8;}
-    }
-    
-    /* Particelle del portale */
-    .portal-particle{
-      position:absolute;
-      width:3px;
-      height:3px;
-      background:var(--green);
-      border-radius:50%;
-      box-shadow:0 0 10px var(--green);
-      animation:portalParticle 3s ease-out infinite;
-    }
-    
-    @keyframes portalParticle{
-      0%{
-        transform:translate(0, 0) scale(0);
-        opacity:0;
-      }
-      30%{
-        opacity:1;
-      }
-      100%{
-        transform:translate(var(--tx), var(--ty)) scale(1);
-        opacity:0;
-      }
-    }
-    
-    /* Chat Oracle dentro il portale */
-    .oracleCard{
-      position:relative;
-      z-index:1003;
-      width:100%;
-      max-width:720px;
-    }
-    
-    @keyframes cardAppear{
-      0%{transform:scale(0.8); opacity:0;}
-      100%{transform:scale(1); opacity:1;}
-    }
-    
+    /* Chat Oracle */
     .oracleChat{
       max-height:340px;
       overflow-y:auto;
-      background:rgba(0,0,0,.6);
-      border:1px solid rgba(0,255,154,.3);
+      background:rgba(0,0,0,.4);
+      border:1px solid rgba(0,255,154,.2);
       border-radius:12px;
       padding:16px;
       margin:16px 0;
       font-size:14px;
       line-height:1.6;
-      box-shadow:
-        0 0 20px rgba(0,255,154,0.2),
-        inset 0 0 20px rgba(0,255,154,0.1);
     }
     
     .oracleChat::-webkit-scrollbar{width:6px;}
@@ -658,55 +542,6 @@
       background:rgba(0,255,154,.15);
       border:1px solid rgba(0,255,154,.3);
       color:var(--green);
-      text-shadow:0 0 10px rgba(0,255,154,0.3);
-    }
-    
-    /* Effetto typewriter magico */
-    .magic-char{
-      display:inline-block;
-      animation:magicWave 2s ease-in-out infinite;
-      text-shadow:
-        0 0 10px rgba(0,255,154,0.6),
-        0 0 20px rgba(0,255,154,0.4),
-        0 0 30px rgba(0,255,154,0.2);
-    }
-    
-    @keyframes magicWave{
-      0%, 100%{
-        transform:translateY(0px);
-        opacity:1;
-      }
-      25%{
-        transform:translateY(-8px);
-        opacity:0.8;
-      }
-      50%{
-        transform:translateY(0px);
-        opacity:1;
-      }
-      75%{
-        transform:translateY(8px);
-        opacity:0.9;
-      }
-    }
-    
-    .typewriter-msg .magic-char{
-      animation:magicAppear 0.5s ease-out, magicWave 2s ease-in-out infinite 0.5s;
-    }
-    
-    @keyframes magicAppear{
-      0%{
-        opacity:0;
-        transform:scale(0) translateY(-20px);
-      }
-      50%{
-        opacity:1;
-        transform:scale(1.2) translateY(0);
-      }
-      100%{
-        opacity:1;
-        transform:scale(1) translateY(0);
-      }
     }
     
     .message.system{
@@ -845,10 +680,10 @@
               <span class="btnCaption">frequenze sonore del campo</span>
               <span class="newBadge" data-badge="song" style="display:none">NEW</span>
             </button>
-            <button class="menuBtn" data-cat="broadcast">
+            <button class="menuBtn" data-cat="podcast">
               <span>PODCAST</span>
-              <span class="btnCaption">episodi audio dal campo</span>
-              <span class="newBadge" data-badge="broadcast" style="display:none">NEW</span>
+              <span class="btnCaption">episodi audio on-demand</span>
+              <span class="newBadge" data-badge="podcast" style="display:none">NEW</span>
             </button>
             <button class="menuBtn" data-cat="video">
               <span>VIDEO</span>
@@ -869,13 +704,15 @@
 
       <!-- SCREEN: ORACLE OCHO -->
       <div class="screen hidden" id="screenOracle">
-        <div class="card oracleCard">
+        <div class="card">
           <h1 class="title">🔮 OCHO - ORACOLO DEL SISTEMA</h1>
-          <p class="subtitle">Fai la tua domanda usando il microfono. OCHO risponderà con saggezza antica.</p>
+          <p class="subtitle">Fai la tua domanda usando il microfono. OCHO risponderà con la voce di Jack.</p>
 
           <!-- Chat messages -->
           <div class="oracleChat" id="oracleChat">
-            <!-- I messaggi appariranno qui dinamicamente -->
+            <div class="message system">
+              🌌 Sistema OCHO inizializzato. Caricamento biblioteca in corso...
+            </div>
           </div>
 
           <!-- Microfono -->
@@ -886,7 +723,6 @@
           <!-- Controlli -->
           <div class="oracleControls">
             <button class="miniBtn" id="clearChatBtn">🗑️ Pulisci Chat</button>
-            <button class="miniBtn" id="resetNewBtn">🔄 Reset Badge NEW</button>
             <button class="miniBtn" id="backFromOracle">← Menu</button>
           </div>
         </div>
@@ -895,6 +731,7 @@
       <!-- PLAYER -->
       <div class="playerbar" id="playerbar">
         <div class="track" id="track">—</div>
+        <div class="progress-info"><span id="progressText">File 0/0</span>&nbsp;•&nbsp;<span id="filename">—</span></div>
         <div class="progress-info">
           <span id="timeText">0:00 / 0:00</span>
         </div>
@@ -915,11 +752,6 @@
     </div>
   </div>
 
-  <!-- PORTALE MATRIX per OCHO -->
-  <div class="portal-overlay" id="portalOverlay">
-    <div class="wormhole" id="wormhole"></div>
-  </div>
-
 <script>
 /* =======================
    CONFIG GITHUB
@@ -932,17 +764,21 @@ const ANSA_URL = "https://www.ansa.it/";
 const FOLDERS = {
   frasi: { path: "mp3", exts: [".mp3"], exclude: ["inizio.mp3"] },
   song: { path: "song", exts: [".mp3"] },
-  broadcast: { path: "broadcast", exts: [".mp3"] },
+  podcast: { path: "broadcast", exts: [".mp3"] },
   video: { path: "mp4", exts: [".mp4", ".avi", ".mov", ".webm"] }
 };
 
 /* =======================
-   ORACLE API KEY - GROQ (QUASI GRATIS!)
+   ORACLE API KEYS
    ======================= */
-// GROQ API - Tier gratuito disponibile!
-// Crea la tua chiave su: https://console.groq.com/keys
-const GROQ_API_KEY = "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"; // ✅ CHIAVE INSERITA!
+// === OCHO ORACLE (RAG) ===
+// L'API key serve SOLO per chiamare un modello (opzionale). La ricerca nel tuo archivio avviene qui in JS.
+const GROQ_API_KEY = ""; // <-- incolla qui la tua Groq API key (opzionale). Se vuota, OCHO risponde solo con l'archivio.
+const GROQ_MODEL = "llama-3.1-70b-versatile"; // puoi cambiare modello se vuoi
 
+// Text-to-Speech (opzionale)
+const ELEVENLABS_API_KEY = ""; // <-- incolla qui la tua ElevenLabs key (opzionale)
+const ELEVENLABS_VOICE_ID = "kKnIQQYgU6nl3rbQsBWE"; // Jack - smooth, deep, mysterious
 /* =======================
    STATE
    ======================= */
@@ -956,6 +792,20 @@ let playHistory = [];
 // AUTOMATIC NEW DETECTION
 let fileSnapshots = {}; // Snapshot dei file alla prima visita
 let seenFiles = {}; // File che l'utente ha effettivamente ascoltato
+
+// MIGRAZIONE: rinomina categoria "broadcast" -> "podcast" nei salvataggi vecchi
+try {
+  const snapRaw = localStorage.getItem('ocho_snapshots');
+  if (snapRaw) {
+    const s = JSON.parse(snapRaw);
+    if (s.broadcast && !s.podcast) { s.podcast = s.broadcast; delete s.broadcast; localStorage.setItem('ocho_snapshots', JSON.stringify(s)); }
+  }
+  const seenRaw = localStorage.getItem('ocho_seen');
+  if (seenRaw) {
+    const v = JSON.parse(seenRaw);
+    if (v.broadcast && !v.podcast) { v.podcast = v.broadcast; delete v.broadcast; localStorage.setItem('ocho_seen', JSON.stringify(v)); }
+  }
+} catch(e) {}
 
 // Load from localStorage
 try {
@@ -1063,37 +913,20 @@ function setStatus(msg) {
 }
 
 function show(which) {
-  console.log("🔍 show() chiamata con:", which);
-  console.log("📋 Schermate disponibili:", [screenEnter, screenPills, screenMenu, screenOracle].map(s => s?.id));
-  
-  const screens = [screenEnter, screenPills, screenMenu, screenOracle];
-  
-  screens.forEach(s => {
-    if (!s) {
-      console.error("❌ Schermata undefined!");
-      return;
-    }
-    
-    const targetId = `screen${which.charAt(0).toUpperCase() + which.slice(1)}`;
-    console.log(`🔎 Confronto ${s.id} con ${targetId}`);
-    
-    if (s.id === targetId) {
-      console.log("✅ Mostrando:", s.id);
-      s.classList.remove("hidden");
-      setTimeout(() => {
-        s.classList.add("active");
-        console.log("✅ Classe active aggiunta a:", s.id);
-      }, 10);
-    } else {
-      console.log("❌ Nascondendo:", s.id);
-      s.classList.remove("active");
-      setTimeout(() => {
-        s.classList.add("hidden");
-      }, 400);
-    }
+  // which can be: "enter", "pills", "menu", "oracle"
+  document.querySelectorAll(".screen").forEach(s => {
+    s.classList.remove("active");
+    s.classList.add("hidden");
   });
-  
-  console.log("✅ show() completata!");
+
+  const id = `screen${which.charAt(0).toUpperCase() + which.slice(1)}`;
+  const target = document.getElementById(id);
+  if (!target) {
+    console.warn("Screen not found:", id);
+    return;
+  }
+  target.classList.remove("hidden");
+  requestAnimationFrame(() => target.classList.add("active"));
 }
 
 function showPlayer(on) { 
@@ -1213,38 +1046,6 @@ function updateNewBadges() {
       badge.style.display = "none";
     }
   }
-}
-
-function resetAllFilesToOld() {
-  // RESET: Marca tutti i file esistenti come "vecchi" (60+ giorni fa)
-  // Da oggi in poi, solo i NUOVI file aggiunti mostreranno il badge NEW
-  
-  console.log("🔄 RESET: Marcando tutti i file esistenti come vecchi...");
-  
-  const sixtyDaysAgo = new Date();
-  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-  const oldDate = sixtyDaysAgo.toISOString();
-  
-  let totalFiles = 0;
-  
-  for (const cat in fileSnapshots) {
-    for (const filename in fileSnapshots[cat]) {
-      // Imposta firstSeen a 60 giorni fa
-      fileSnapshots[cat][filename].firstSeen = oldDate;
-      totalFiles++;
-    }
-  }
-  
-  // Salva nel localStorage
-  localStorage.setItem('ocho_snapshots', JSON.stringify(fileSnapshots));
-  
-  console.log(`✅ RESET completato: ${totalFiles} file marcati come vecchi`);
-  console.log(`📅 Da oggi solo i NUOVI contenuti mostreranno il badge NEW`);
-  
-  // Aggiorna i badge (ora dovrebbero essere tutti a zero)
-  updateNewBadges();
-  
-  alert(`✅ RESET completato!\n\n${totalFiles} file esistenti marcati come "vecchi".\n\nDa oggi in poi, solo i contenuti NUOVI che aggiungerai mostreranno il badge NEW.`);
 }
 
 async function preloadAllCategories() {
@@ -1419,7 +1220,7 @@ function drawPrev(cat) {
 function updateProgress() {
   const pos = deckPos.get(currentCat) || 0;
   const total = (playlists.get(currentCat) || []).length;
-  progressText.textContent = `File ${pos}/${total}`;
+  if (progressText) progressText.textContent = `File ${Math.min(pos, total)}/${total}`;
 }
 
 function updateTime() {
@@ -1434,7 +1235,8 @@ function playPath(cat, src) {
   showPlayer(true);
   trackEl.textContent = `[${cat.toUpperCase()}]`;
   
-  const filename = src.split('/').pop();
+  const filename = src.split("/").pop();
+  if (filenameEl) filenameEl.textContent = filename;
   
   // Marca il file come visto
   markAsSeen(cat, filename);
@@ -1473,6 +1275,7 @@ async function playNext(cat) {
   const idx = draw(cat);
   const src = playlists.get(cat)[idx];
   playPath(cat, src);
+  updateProgress();
 }
 
 async function playPrev(cat) {
@@ -1481,6 +1284,7 @@ async function playPrev(cat) {
   const idx = drawPrev(cat);
   const src = playlists.get(cat)[idx];
   playPath(cat, src);
+  updateProgress();
 }
 
 /* =======================
@@ -1488,17 +1292,15 @@ async function playPrev(cat) {
    ======================= */
 
 document.getElementById("enterBtn").addEventListener("click", () => {
-  console.log("✅ ACCEDI cliccato");
   setStatus("Avvio…");
-  // Rimosso audio che potrebbe bloccare
+  introAudio.currentTime = 0;
+  introAudio.play().catch(() => {});
   bg.style.backgroundImage =
     `radial-gradient(1200px 700px at 50% 70%, rgba(0,255,154,.12), transparent 60%),
      radial-gradient(900px 500px at 50% 40%, rgba(0,255,154,.10), transparent 60%),
-     #000`;
-  console.log("✅ Chiamo show(pills)");
+     url("assets/inizio.jpeg") center/cover no-repeat`;
   show("pills");
   setStatus("Pronto.");
-  console.log("✅ Fatto!");
 });
 
 document.getElementById("blueBtn").addEventListener("click", () => {
@@ -1580,14 +1382,34 @@ video.addEventListener("timeupdate", updateTime);
 const oracleChat = document.getElementById("oracleChat");
 const micBtn = document.getElementById("micBtn");
 const clearChatBtn = document.getElementById("clearChatBtn");
-const resetNewBtn = document.getElementById("resetNewBtn");
 const backFromOracle = document.getElementById("backFromOracle");
 const ochoBtn = document.getElementById("ochoBtn");
-const portalOverlay = document.getElementById("portalOverlay");
-const wormhole = document.getElementById("wormhole");
 
-// Apri portale Matrix
-// Funzioni portale rimosse - OCHO ora si apre direttamente!
+// Crea stelline magiche sul pulsante OCHO
+function createSparkles() {
+  const button = ochoBtn;
+  if (!button) return;
+  
+  setInterval(() => {
+    const sparkle = document.createElement('div');
+    sparkle.className = 'sparkle';
+    
+    // Posizione casuale attorno al pulsante
+    const angle = Math.random() * 360;
+    const distance = 30 + Math.random() * 20;
+    const x = Math.cos(angle * Math.PI / 180) * distance;
+    const y = Math.sin(angle * Math.PI / 180) * distance;
+    
+    sparkle.style.left = `calc(50% + ${x}px)`;
+    sparkle.style.top = `calc(50% + ${y}px)`;
+    sparkle.style.animationDelay = Math.random() * 2 + 's';
+    
+    button.appendChild(sparkle);
+    
+    // Rimuovi dopo l'animazione
+    setTimeout(() => sparkle.remove(), 2000);
+  }, 300);
+}
 
 // Inizializza il riconoscimento vocale (lazy loading)
 function initSpeechRecognition() {
@@ -1610,7 +1432,7 @@ function initSpeechRecognition() {
 async function loadLibrary() {
   if (libraryLoaded) return;
   
-  addSystemMessage('📚 Caricamento conoscenza OCHO...');
+  addSystemMessage('📚 Caricamento archivio OCHO...');
   
   try {
     const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/libreria?ref=${GITHUB_BRANCH}`;
@@ -1657,149 +1479,217 @@ function addSystemMessage(text) {
   addMessage(text, 'system');
 }
 
-// Chiedi a OCHO (GROQ API - Llama 3.1 70B)
+// Chiedi a Claude (Anthropic API)
+// --- RICERCA NELL'ARCHIVIO (semplice ma efficace) ---
+const IT_STOP = new Set([
+  "a","ad","al","allo","alla","alle","agli","ai","anche","anzi","avere","che","chi","ci","coi","come","con","contro",
+  "cui","da","dal","dallo","dalla","dalle","dagli","dei","del","dell","della","delle","degli","di","dove","due","e",
+  "è","ed","era","ero","essere","fa","fai","fanno","gli","ha","hai","hanno","ho","i","il","in","io","la","le","lei",
+  "lo","loro","lui","ma","mi","mia","mie","miei","molto","ne","nei","nel","nell","nella","nelle","no","noi","non",
+  "o","oggi","ogni","per","perché","pero","più","poi","quale","quando","quanto","qui","quindi","se","sei","si",
+  "sia","sono","su","sul","sulla","tra","tre","tu","tua","un","una","uno","vi","voi"
+]);
+
+function normTokens(s) {
+  return (s || "")
+    .toLowerCase()
+    .replace(/[^a-zàèéìòóù0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(t => t && t.length > 2 && !IT_STOP.has(t));
+}
+
+function cosineSim(aMap, bMap) {
+  let dot = 0, a2 = 0, b2 = 0;
+  for (const [k, av] of aMap.entries()) {
+    a2 += av*av;
+    const bv = bMap.get(k) || 0;
+    dot += av*bv;
+  }
+  for (const bv of bMap.values()) b2 += bv*bv;
+  if (!a2 || !b2) return 0;
+  return dot / (Math.sqrt(a2) * Math.sqrt(b2));
+}
+
+function tfMap(tokens) {
+  const m = new Map();
+  tokens.forEach(t => m.set(t, (m.get(t)||0) + 1));
+  return m;
+}
+
+function chunkText(text, maxLen=700) {
+  const parts = [];
+  const paras = (text || "").split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  let buf = "";
+  for (const p of paras) {
+    if ((buf + "\n\n" + p).length > maxLen) {
+      if (buf) parts.push(buf);
+      buf = p;
+    } else {
+      buf = buf ? (buf + "\n\n" + p) : p;
+    }
+  }
+  if (buf) parts.push(buf);
+  return parts.length ? parts : [text];
+}
+
+function buildPassages() {
+  const passages = [];
+  for (const doc of libraryTexts) {
+    const chunks = chunkText(doc.content, 700);
+    chunks.forEach((c, idx) => {
+      const tokens = normTokens(c);
+      passages.push({
+        id: `${doc.filename}#${idx}`,
+        filename: doc.filename,
+        text: c,
+        vec: tfMap(tokens)
+      });
+    });
+  }
+  return passages;
+}
+
+let passagesCache = null;
+
+function retrievePassages(question, k=3) {
+  if (!libraryTexts.length) return [];
+  if (!passagesCache) passagesCache = buildPassages();
+  const qVec = tfMap(normTokens(question));
+  const scored = passagesCache.map(p => ({...p, score: cosineSim(qVec, p.vec)}));
+  scored.sort((a,b) => b.score - a.score);
+  return scored.slice(0, k).filter(x => x.score > 0.05);
+}
+
+// Chiedi a Groq (opzionale) con contesto ridotto (RAG)
+async function askGroqWithContext(question, contexts) {
+  const contextBlock = contexts.map((c, i) => `CONTESTO ${i+1}:\n${c.text}`).join("\n\n---\n\n");
+  const system = `Sei OCHO, un oracolo conciso. Devi rispondere SOLO usando i contesti forniti.
+Regole:
+- Risposta in italiano.
+- 3-5 frasi massimo.
+- Se i contesti non bastano, di': "Questo non è nel mio archivio." (senza inventare).`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${GROQ_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      temperature: 0.2,
+      max_tokens: 220,
+      messages: [
+        { role: "system", content: system + "\n\n" + contextBlock },
+        { role: "user", content: question }
+      ]
+    })
+  });
+
+  if (!res.ok) throw new Error(`Groq API Error: ${res.status}`);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() || "";
+}
+
+// Chiedi a OCHO (retrieval + eventuale modello)
 async function askOracle(question) {
   if (!question || question.trim() === '') return;
-  
+
   addMessage(question, 'user');
-  addSystemMessage('🔮 OCHO sta elaborando...');
-  
-  if (!GROQ_API_KEY || GROQ_API_KEY === "LA_TUA_CHIAVE_GROQ") {
-    addMessage("⚠️ API Key GROQ non configurata! Crea la tua chiave gratuita su console.groq.com/keys", 'oracle');
-    return;
-  }
-  
+  addSystemMessage('🔎 OCHO cerca nel tuo archivio...');
+
   if (!libraryLoaded) {
     await loadLibrary();
   }
-  
-  // Prepara il contesto dalla libreria
-  const libraryContext = libraryTexts.length > 0 
-    ? libraryTexts.map(t => `[Fonte: ${t.filename}]\n${t.content}`).join('\n\n---\n\n')
-    : "Nessun documento di conoscenza disponibile.";
-  
-  const systemPrompt = `Sei OCHO, un'entità saggia che POSSIEDE questa conoscenza nel suo essere.
 
-La tua conoscenza proviene da:
-${libraryContext}
+  const contexts = retrievePassages(question, 3);
 
-REGOLE FONDAMENTALI:
-1. Parla in PRIMA PERSONA - questa conoscenza è TUA, non di altri
-2. MAI citare fonti, nomi, autori o riferimenti esterni
-3. MAI dire "secondo", "nell'intervista", "da", o simili
-4. Risposte BREVI - massimo 3-4 frasi concise e dirette
-5. MAI ripetere concetti già espressi
-6. Se non sai, dì semplicemente "Questo non è nella mia conoscenza"
-7. Tono diretto, mistico ma essenziale
-8. Rispondi sempre in italiano
+  // Rimuovi il messaggio "cerca..."
+  const loadingMsg = oracleChat.querySelector('.message.system:last-child');
+  if (loadingMsg && loadingMsg.textContent.includes('cerca')) loadingMsg.remove();
 
-Esempi:
-❌ MALE: "Secondo il testo, le anime sono..."
-✅ BENE: "Le anime sono scintille di coscienza universale."
+  if (!contexts.length) {
+    const answer = "Questo non è nel mio archivio.";
+    addMessage(answer, 'oracle');
+    await speakWithJack(answer);
+    return;
+  }
 
-Assorbi i concetti, parlali come tuoi, sii breve e diretto.`;
+  // Se NON hai Groq key: risposta 100% archivio
+  if (!GROQ_API_KEY) {
+    let best = contexts[0].text.trim();
+    if (best.length > 500) best = best.slice(0, 500).trim() + "…";
+    addMessage(best, 'oracle');
+    await speakWithJack(best);
+    return;
+  }
 
+  // Se hai Groq key: risposta breve basata sui contesti
+  addSystemMessage('🔮 OCHO elabora (Groq)...');
   try {
-    // GROQ API usa formato OpenAI-compatible
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const answer = await askGroqWithContext(question, contexts);
+    const lm = oracleChat.querySelector('.message.system:last-child');
+    if (lm && lm.textContent.includes('elabora')) lm.remove();
+
+    const finalAnswer = answer || "Questo non è nel mio archivio.";
+    addMessage(finalAnswer, 'oracle');
+    await speakWithJack(finalAnswer);
+  } catch (error) {
+    console.error('Errore Groq:', error);
+    addSystemMessage(`⚠️ Groq non disponibile: ${error.message}`);
+    let best = contexts[0].text.trim();
+    if (best.length > 500) best = best.slice(0, 500).trim() + "…";
+    addMessage(best, 'oracle');
+    await speakWithJack(best);
+  }
+}
+
+// Parla con voce di Jack (ElevenLabs TTS)
+async function speakWithJack(text) {
+  if (!text) return;
+  
+  addSystemMessage('🔊 Jack sta parlando...');
+  
+  try {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`, {
       method: 'POST',
       headers: {
+        'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
+        'xi-api-key': ELEVENLABS_API_KEY
       },
       body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile', // Modello Llama 3.1 70B - ottima qualità!
-        max_tokens: 300,
-        temperature: 0.7,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: question
-          }
-        ]
+        text: text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75
+        }
       })
     });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`GROQ API Error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+      throw new Error(`ElevenLabs Error: ${response.status}`);
     }
     
-    const data = await response.json();
-    const answer = data.choices[0].message.content;
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audioEl = new Audio(audioUrl);
     
-    // Rimuovi il messaggio di caricamento
-    const loadingMsg = oracleChat.querySelector('.message.system:last-child');
-    if (loadingMsg && loadingMsg.textContent.includes('elaborando')) {
-      loadingMsg.remove();
-    }
+    audioEl.play();
     
-    // Mostra risposta con effetto typewriter magico
-    showMagicTypewriter(answer);
-    
-  } catch (error) {
-    console.error('Errore GROQ API:', error);
-    const loadingMsg = oracleChat.querySelector('.message.system:last-child');
-    if (loadingMsg && loadingMsg.textContent.includes('elaborando')) {
-      loadingMsg.remove();
-    }
-    addMessage(`❌ Errore: ${error.message}`, 'system');
-  }
-}
-    
-    // Rimuovi il messaggio di caricamento
-    const loadingMsg = oracleChat.querySelector('.message.system:last-child');
-    if (loadingMsg && loadingMsg.textContent.includes('elaborando')) {
-      loadingMsg.remove();
-    }
-    
-    // Mostra risposta con effetto typewriter magico
-    showMagicTypewriter(answer);
-    
-  } catch (error) {
-    console.error('Errore Anthropic API:', error);
-    addMessage(`Errore: ${error.message}`, 'system');
-  }
-}
-
-// Mostra risposta con effetto typewriter magico ondeggiante
-async function showMagicTypewriter(text) {
-  if (!text) return;
-  
-  // Crea il messaggio container
-  const msg = document.createElement('div');
-  msg.className = 'message oracle typewriter-msg';
-  msg.style.minHeight = '40px';
-  oracleChat.appendChild(msg);
-  oracleChat.scrollTop = oracleChat.scrollHeight;
-  
-  // Mostra testo lettera per lettera con effetto onda
-  let index = 0;
-  const speed = 30; // millisecondi per lettera
-  
-  return new Promise((resolve) => {
-    const interval = setInterval(() => {
-      if (index < text.length) {
-        // Crea span per ogni lettera con effetto onda
-        const char = text[index];
-        const span = document.createElement('span');
-        span.textContent = char;
-        span.className = 'magic-char';
-        span.style.animationDelay = `${index * 0.05}s`;
-        msg.appendChild(span);
-        
-        index++;
-        oracleChat.scrollTop = oracleChat.scrollHeight;
-      } else {
-        clearInterval(interval);
-        resolve();
+    audioEl.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+      const speakingMsg = oracleChat.querySelector('.message.system:last-child');
+      if (speakingMsg && speakingMsg.textContent.includes('Jack sta parlando')) {
+        speakingMsg.remove();
       }
-    }, speed);
-  });
+    };
+    
+  } catch (error) {
+    console.error('Errore ElevenLabs TTS:', error);
+    addSystemMessage('⚠️ Errore audio - crediti ElevenLabs esauriti o problema di rete');
+  }
 }
 
 // Avvia l'ascolto
@@ -1847,26 +1737,16 @@ function stopListening() {
 
 // Event Listeners Oracle
 ochoBtn.addEventListener("click", () => {
-  console.log("🔮 OCHO cliccato - apertura diretta!");
-  show("screenOracle");
+  show("oracle");
   setStatus("OCHO attivo");
-  
-  // Svuota chat e mostra messaggio di benvenuto
-  oracleChat.innerHTML = '';
-  setTimeout(() => {
-    showMagicTypewriter("Io sono OCHO. Fai la tua domanda e ti rivelerò ciò che so.");
-  }, 300);
-  
   if (!libraryLoaded) {
     loadLibrary();
   }
 });
 
 backFromOracle.addEventListener("click", () => {
-  console.log("← Torna al menu");
   show("menu");
   setStatus("Menu");
-  
   if (isListening) {
     stopListening();
   }
@@ -1882,12 +1762,6 @@ micBtn.addEventListener("click", () => {
 
 clearChatBtn.addEventListener("click", () => {
   oracleChat.innerHTML = '<div class="message system">🌌 Chat pulita. OCHO pronto.</div>';
-});
-
-resetNewBtn.addEventListener("click", () => {
-  if (confirm("⚠️ RESET Badge NEW\n\nQuesto segnerà tutti i file esistenti come 'vecchi'.\nDa oggi in poi, solo i NUOVI contenuti che aggiungerai mostreranno il badge NEW.\n\nConfermi?")) {
-    resetAllFilesToOld();
-  }
 });
 
 // Inizializza stelline magiche
