@@ -1656,7 +1656,31 @@ function buildPassages() {
 }
 
 let passagesCache = null;
+let lastUserQuestion = '';
+let lastOracleAnswer = '';
+let lastContexts = [];
+let retryCount = 0;
 
+
+
+function questionSimilarity(a, b) {
+  const ta = new Set(normTokens(a));
+  const tb = new Set(normTokens(b));
+  if (!ta.size || !tb.size) return 0;
+  let inter = 0;
+  for (const t of ta) if (tb.has(t)) inter++;
+  const union = ta.size + tb.size - inter;
+  return union ? (inter / union) : 0;
+}
+
+const metaphysicalHints = [
+  "dio","morte","aldilà","anima","assoluto","verità","senso della vita","coscienza universale","chi sono","perché esisto"
+];
+
+function isMetaphysical(q){
+  const low = (q||"").toLowerCase();
+  return metaphysicalHints.some(k => low.includes(k));
+}
 function retrievePassages(question, k=3) {
   if (!libraryTexts.length) return [];
   if (!passagesCache) passagesCache = buildPassages();
@@ -1667,18 +1691,21 @@ function retrievePassages(question, k=3) {
 }
 
 // Chiedi a Groq (opzionale) con contesto ridotto (RAG)
-async function askGroqWithContext(question, contexts) {
+async function askGroqWithContext(question, contexts, opts = {}) {
   const contextBlock = contexts.map((c, i) => `CONTESTO ${i+1}:\n${c.text}`).join("\n\n---\n\n");
-  const system = `Sei OCHO. Rispondi SEMPRE in prima persona, come se queste idee fossero tue.
-Regole obbligatorie:
-- Non citare MAI autori, fonti, documenti o "secondo X".
-- Non usare frasi tipo: "la fonte dice", "secondo l'autore", "nel testo si legge".
-- Non riportare nomi propri presenti nel contesto come attribuzione.
-- Tono diretto e assertivo: "Io...", "Per me...", "Ti rispondo così...".
-- 3–5 frasi massimo.
-- Se i contesti non bastano, dì: "Questo non è nel mio archivio." (senza inventare).`;
+
+  const isRetry = !!opts.isRetry;
+  const prev = (opts.prevAnswer || "").trim();
+  const prevBlock = prev ? `\n\nRISPOSTA PRECEDENTE (da non ripetere uguale):\n${prev}` : "";
+
+  // Compone istruzioni finali (Opzione C + retry precisione)
+  const system = `${systemBase}\n\n${modeRules}\n\n${retryRules}${prevBlock}`;
+
+  const maxTokens = isRetry ? 360 : 260;
+  const temperature = isRetry ? 0.25 : 0.2;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1686,10 +1713,12 @@ Regole obbligatorie:
     },
     body: JSON.stringify({
       model: GROQ_MODEL,
-      temperature: 0.2,
-      max_tokens: 220,
+      temperature: temperature,
+      max_tokens: maxTokens,
       messages: [
-        { role: "system", content: system + "\n\n" + contextBlock },
+        { role: "system", content: system + "
+
+" + contextBlock },
         { role: "user", content: question }
       ]
     })
@@ -1711,7 +1740,13 @@ async function askOracle(question) {
     await loadLibrary();
   }
 
-  const contexts = retrievePassages(question, 3);
+  // Se l'utente riformula la stessa domanda, entra in modalità "precisione"
+  const sim = questionSimilarity(question, lastUserQuestion);
+  const isRetry = sim >= 0.55;
+  retryCount = isRetry ? Math.min(retryCount + 1, 3) : 0;
+
+  const k = isRetry ? 5 : 3;
+  const contexts = retrievePassages(question, k);
 
   // Rimuovi il messaggio "cerca..."
   const loadingMsg = oracleChat.querySelector('.message.system:last-child');
@@ -1719,6 +1754,8 @@ async function askOracle(question) {
 
   if (!contexts.length) {
     const answer = "Questo non è nel mio archivio.";
+    lastOracleAnswer = answer;
+    lastContexts = [];
     await addMessage(answer, 'oracle');
     return;
   }
@@ -1727,6 +1764,16 @@ async function askOracle(question) {
   if (!GROQ_API_KEY) {
     let best = contexts[0].text.trim();
     if (best.length > 500) best = best.slice(0, 500).trim() + "…";
+
+    // Opzione C (senza Groq): se domanda metafisica, risposta più enigmatica (silenzio)
+    if (isMetaphysical(question)) {
+      // estrai una riga forte, altrimenti usa una formula di silenzio
+      const firstLine = best.split(/
++/).map(x=>x.trim()).filter(Boolean)[0] || "";
+      best = firstLine ? firstLine : "Non è qualcosa che posso dire con parole.";
+    }
+    lastOracleAnswer = best;
+    lastContexts = contexts;
     await addMessage(best, 'oracle');
     return;
   }
@@ -1734,17 +1781,29 @@ async function askOracle(question) {
   // Se hai Groq key: risposta breve basata sui contesti
   addSystemMessage('🔮 OCHO elabora (Groq)...');
   try {
-    const answer = await askGroqWithContext(question, contexts);
+    const answer = await askGroqWithContext(question, contexts, { isRetry, prevAnswer: lastOracleAnswer });
     const lm = oracleChat.querySelector('.message.system:last-child');
     if (lm && lm.textContent.includes('elabora')) lm.remove();
 
     const finalAnswer = answer || "Questo non è nel mio archivio.";
+    lastOracleAnswer = finalAnswer;
+    lastContexts = contexts;
     await addMessage(finalAnswer, 'oracle');
   } catch (error) {
     console.error('Errore Groq:', error);
     addSystemMessage(`⚠️ Groq non disponibile: ${error.message}`);
     let best = contexts[0].text.trim();
     if (best.length > 500) best = best.slice(0, 500).trim() + "…";
+
+    // Opzione C (senza Groq): se domanda metafisica, risposta più enigmatica (silenzio)
+    if (isMetaphysical(question)) {
+      // estrai una riga forte, altrimenti usa una formula di silenzio
+      const firstLine = best.split(/
++/).map(x=>x.trim()).filter(Boolean)[0] || "";
+      best = firstLine ? firstLine : "Non è qualcosa che posso dire con parole.";
+    }
+    lastOracleAnswer = best;
+    lastContexts = contexts;
     await addMessage(best, 'oracle');
   }
 }
