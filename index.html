@@ -778,9 +778,7 @@
           <h1 class="title">OCHO RISPONDE ALLE TUE DOMANDE</h1>
 <!-- Chat messages -->
           <div class="oracleChat" id="oracleChat">
-            <div class="message system">
-              🌌 Sistema OCHO inizializzato. Caricamento biblioteca in corso...
-            </div>
+            
           </div>
 
           <!-- Microfono -->
@@ -1494,10 +1492,8 @@ function initSpeechRecognition() {
     recognition.continuous = false;
     recognition.interimResults = false;
     
-    addSystemMessage('🎤 Microfono inizializzato');
-  } else {
-    addSystemMessage('❌ Riconoscimento vocale non supportato in questo browser');
-  }
+    } else {
+    }
 }
 
 // Carica la biblioteca dalla cartella libreria/
@@ -1509,7 +1505,6 @@ async function loadLibrary() {
     const res = await fetch(url);
     
     if (!res.ok) {
-      addSystemMessage('⚠️ Cartella libreria/ non trovata - modalità base attiva');
       libraryLoaded = true;
       return;
     }
@@ -1526,12 +1521,10 @@ async function loadLibrary() {
       });
     }
     
-    addSystemMessage(`✅ ${txtFiles.length} documenti caricati. OCHO pronto.`);
     libraryLoaded = true;
     
   } catch (error) {
     console.error('Errore caricamento libreria:', error);
-    addSystemMessage('⚠️ Errore caricamento - modalità base attiva');
     libraryLoaded = true;
   }
 }
@@ -1580,10 +1573,7 @@ function addMessage(text, type = 'oracle') {
   }
 }
 
-function addSystemMessage(text) {
-  // UI silenziata: niente messaggi di sistema nella chat
-  return;
-}
+function addSystemMessage(text){ return; }
 
 // Chiedi a Claude (Anthropic API)
 // --- RICERCA NELL'ARCHIVIO (semplice ma efficace) ---
@@ -1595,6 +1585,15 @@ const IT_STOP = new Set([
   "o","oggi","ogni","per","perché","pero","più","poi","quale","quando","quanto","qui","quindi","se","sei","si",
   "sia","sono","su","sul","sulla","tra","tre","tu","tua","un","una","uno","vi","voi"
 ]);
+
+
+const metaphysicalHints = [
+  "dio","morte","aldilà","anima","assoluto","verità","senso della vita","coscienza universale","chi sono","perché esisto"
+];
+function isMetaphysical(q){
+  const low = (q||"").toLowerCase();
+  return metaphysicalHints.some(k => low.includes(k));
+}
 
 function normTokens(s) {
   return (s || "")
@@ -1614,6 +1613,17 @@ function cosineSim(aMap, bMap) {
   for (const bv of bMap.values()) b2 += bv*bv;
   if (!a2 || !b2) return 0;
   return dot / (Math.sqrt(a2) * Math.sqrt(b2));
+}
+
+
+function questionSimilarity(a, b) {
+  const ta = new Set(normTokens(a));
+  const tb = new Set(normTokens(b));
+  if (!ta.size || !tb.size) return 0;
+  let inter = 0;
+  for (const t of ta) if (tb.has(t)) inter++;
+  const union = ta.size + tb.size - inter;
+  return union ? (inter / union) : 0;
 }
 
 function tfMap(tokens) {
@@ -1658,29 +1668,9 @@ function buildPassages() {
 let passagesCache = null;
 let lastUserQuestion = '';
 let lastOracleAnswer = '';
-let lastContexts = [];
 let retryCount = 0;
 
 
-
-function questionSimilarity(a, b) {
-  const ta = new Set(normTokens(a));
-  const tb = new Set(normTokens(b));
-  if (!ta.size || !tb.size) return 0;
-  let inter = 0;
-  for (const t of ta) if (tb.has(t)) inter++;
-  const union = ta.size + tb.size - inter;
-  return union ? (inter / union) : 0;
-}
-
-const metaphysicalHints = [
-  "dio","morte","aldilà","anima","assoluto","verità","senso della vita","coscienza universale","chi sono","perché esisto"
-];
-
-function isMetaphysical(q){
-  const low = (q||"").toLowerCase();
-  return metaphysicalHints.some(k => low.includes(k));
-}
 function retrievePassages(question, k=3) {
   if (!libraryTexts.length) return [];
   if (!passagesCache) passagesCache = buildPassages();
@@ -1694,18 +1684,35 @@ function retrievePassages(question, k=3) {
 async function askGroqWithContext(question, contexts, opts = {}) {
   const contextBlock = contexts.map((c, i) => `CONTESTO ${i+1}:\n${c.text}`).join("\n\n---\n\n");
 
+  const systemBase = `Sei OCHO. Rispondi SEMPRE in prima persona, come se queste idee fossero tue.
+Regole obbligatorie:
+- Non citare MAI autori, fonti, documenti o "secondo X".
+- Non usare frasi tipo: "la fonte dice", "secondo l'autore", "nel testo si legge".
+- Non riportare nomi propri presenti nel contesto come attribuzione.
+- Tono diretto e assertivo: "Io...", "Per me...", "Ti rispondo così...".
+- Usa SOLO i contesti forniti (non inventare).
+- Se i contesti non bastano, dì: "Questo non è nel mio archivio." (senza inventare).`;
+
+  const modeRules = `Modalità C (Oracolo / Silenzio):
+- Se la domanda è troppo assoluta/metafisica o chiede verità ultime (es: "dimmi la verità definitiva", "cosa c'è dopo la morte", "dimostrami Dio"), rispondi in modalità SILENZIO: 1–2 frasi, enigmatiche e non dogmatiche, oppure una sola frase: "Non è qualcosa che posso dire con parole."
+- Se la domanda è pratica o chiede chiarimenti, rispondi in modalità ORACOLO: 3–6 frasi, più esplicite.
+- Se la domanda chiede definizioni operative ("cosa intendi per..."), ORACOLO con un esempio breve.`;
+
+  const retryRules = `Se l'utente riformula la stessa domanda perché non è soddisfatto, rendi la risposta più precisa:
+- Chiarisci termini.
+- Vai più "a terra" con un esempio o una distinzione.
+- Aumenta leggermente i dettagli (fino a 7 frasi), senza diventare prolisso.
+- Non ripetere identica la risposta precedente.`;
+
   const isRetry = !!opts.isRetry;
   const prev = (opts.prevAnswer || "").trim();
   const prevBlock = prev ? `\n\nRISPOSTA PRECEDENTE (da non ripetere uguale):\n${prev}` : "";
-
-  // Compone istruzioni finali (Opzione C + retry precisione)
   const system = `${systemBase}\n\n${modeRules}\n\n${retryRules}${prevBlock}`;
 
   const maxTokens = isRetry ? 360 : 260;
   const temperature = isRetry ? 0.25 : 0.2;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1716,9 +1723,7 @@ async function askGroqWithContext(question, contexts, opts = {}) {
       temperature: temperature,
       max_tokens: maxTokens,
       messages: [
-        { role: "system", content: system + "
-
-" + contextBlock },
+        { role: "system", content: system + "\n\n" + contextBlock },
         { role: "user", content: question }
       ]
     })
@@ -1733,18 +1738,17 @@ async function askGroqWithContext(question, contexts, opts = {}) {
 async function askOracle(question) {
   if (!question || question.trim() === '') return;
 
-  addMessage(question, 'user');
-  addSystemMessage('🔎 OCHO cerca nel tuo archivio...');
+  await addMessage(question, 'user');
+  const prevQ = lastUserQuestion;
+  lastUserQuestion = question;
 
   if (!libraryLoaded) {
     await loadLibrary();
   }
 
-  // Se l'utente riformula la stessa domanda, entra in modalità "precisione"
   const sim = questionSimilarity(question, lastUserQuestion);
   const isRetry = sim >= 0.55;
   retryCount = isRetry ? Math.min(retryCount + 1, 3) : 0;
-
   const k = isRetry ? 5 : 3;
   const contexts = retrievePassages(question, k);
 
@@ -1754,8 +1758,6 @@ async function askOracle(question) {
 
   if (!contexts.length) {
     const answer = "Questo non è nel mio archivio.";
-    lastOracleAnswer = answer;
-    lastContexts = [];
     await addMessage(answer, 'oracle');
     return;
   }
@@ -1765,45 +1767,28 @@ async function askOracle(question) {
     let best = contexts[0].text.trim();
     if (best.length > 500) best = best.slice(0, 500).trim() + "…";
 
-    // Opzione C (senza Groq): se domanda metafisica, risposta più enigmatica (silenzio)
     if (isMetaphysical(question)) {
-      // estrai una riga forte, altrimenti usa una formula di silenzio
-      const firstLine = best.split(/
-+/).map(x=>x.trim()).filter(Boolean)[0] || "";
+      const firstLine = best.split(/\n+/).map(x=>x.trim()).filter(Boolean)[0] || "";
       best = firstLine ? firstLine : "Non è qualcosa che posso dire con parole.";
     }
     lastOracleAnswer = best;
-    lastContexts = contexts;
     await addMessage(best, 'oracle');
     return;
   }
 
   // Se hai Groq key: risposta breve basata sui contesti
-  addSystemMessage('🔮 OCHO elabora (Groq)...');
   try {
     const answer = await askGroqWithContext(question, contexts, { isRetry, prevAnswer: lastOracleAnswer });
     const lm = oracleChat.querySelector('.message.system:last-child');
     if (lm && lm.textContent.includes('elabora')) lm.remove();
 
     const finalAnswer = answer || "Questo non è nel mio archivio.";
-    lastOracleAnswer = finalAnswer;
-    lastContexts = contexts;
     await addMessage(finalAnswer, 'oracle');
   } catch (error) {
     console.error('Errore Groq:', error);
-    addSystemMessage(`⚠️ Groq non disponibile: ${error.message}`);
     let best = contexts[0].text.trim();
     if (best.length > 500) best = best.slice(0, 500).trim() + "…";
-
-    // Opzione C (senza Groq): se domanda metafisica, risposta più enigmatica (silenzio)
-    if (isMetaphysical(question)) {
-      // estrai una riga forte, altrimenti usa una formula di silenzio
-      const firstLine = best.split(/
-+/).map(x=>x.trim()).filter(Boolean)[0] || "";
-      best = firstLine ? firstLine : "Non è qualcosa che posso dire con parole.";
-    }
     lastOracleAnswer = best;
-    lastContexts = contexts;
     await addMessage(best, 'oracle');
   }
 }
@@ -1818,14 +1803,11 @@ function startListening() {
   initSpeechRecognition(); // Inizializza solo ora
   
   if (!recognition) {
-    addSystemMessage('❌ Riconoscimento vocale non supportato');
     return;
   }
   
   isListening = true;
   micBtn.classList.add('listening');
-  addSystemMessage('🎤 In ascolto... parla ora');
-  
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript;
     stopListening();
@@ -1835,8 +1817,7 @@ function startListening() {
   recognition.onerror = (event) => {
     console.error('Speech recognition error:', event.error);
     stopListening();
-    addSystemMessage(`❌ Errore: ${event.error}`);
-  };
+    };
   
   recognition.onend = () => {
     if (isListening) {
@@ -1876,8 +1857,7 @@ backFromOracle.addEventListener("click", () => {
 
 function enableKeyboardMode(reasonText) {
   if (kbWrap) kbWrap.classList.remove("hidden");
-  if (reasonText) addSystemMessage(reasonText);
-  if (kbInput) {
+  if (reasonText) if (kbInput) {
     kbInput.focus();
     kbInput.select();
   }
