@@ -1595,6 +1595,27 @@ function isMetaphysical(q){
   return metaphysicalHints.some(k => low.includes(k));
 }
 
+function noGroqRephrase(q, contexts, isRetry){
+  // Mini-riformulazione locale (senza LLM): rende risposta più "OCHO" e meno copia-incolla.
+  const pick = (i) => (contexts[i]?.text || "").split(/\n+/).map(x=>x.trim()).filter(Boolean)[0] || "";
+  let a = pick(0);
+  let b = pick(1);
+
+  // Se retry e c'è un secondo contesto, fondi due spunti
+  let core = (isRetry && b) ? (a + " " + b) : a;
+
+  // Pulizia veloce
+  core = core.replace(/\s+/g," ").trim();
+  if (!core) core = "Questo non è nel mio archivio.";
+
+  // Voce OCHO
+  const intro = isRetry ? "Ti rispondo in modo più preciso: " : "Io la vedo così: ";
+  // Taglio
+  if (core.length > 360) core = core.slice(0, 360).trim() + "…";
+  return intro + core;
+}
+
+
 function normTokens(s) {
   return (s || "")
     .toLowerCase()
@@ -1615,6 +1636,12 @@ function cosineSim(aMap, bMap) {
   return dot / (Math.sqrt(a2) * Math.sqrt(b2));
 }
 
+
+
+function isDissatisfied(q){
+  const low = (q||"").toLowerCase();
+  return ["spiegami meglio","non ho capito","più preciso","più chiaro","non così","intendevo","no","non va bene","ancora"].some(k => low.includes(k));
+}
 
 function questionSimilarity(a, b) {
   const ta = new Set(normTokens(a));
@@ -1691,6 +1718,7 @@ Regole obbligatorie:
 - Non riportare nomi propri presenti nel contesto come attribuzione.
 - Tono diretto e assertivo: "Io...", "Per me...", "Ti rispondo così...".
 - Usa SOLO i contesti forniti (non inventare).
+- Parafrasa SEMPRE: non copiare frasi lunghe dal contesto; riscrivi con parole tue mantenendo il senso.
 - Se i contesti non bastano, dì: "Questo non è nel mio archivio." (senza inventare).`;
 
   const modeRules = `Modalità C (Oracolo / Silenzio):
@@ -1702,15 +1730,16 @@ Regole obbligatorie:
 - Chiarisci termini.
 - Vai più "a terra" con un esempio o una distinzione.
 - Aumenta leggermente i dettagli (fino a 7 frasi), senza diventare prolisso.
-- Non ripetere identica la risposta precedente.`;
+- Non ripetere identica la risposta precedente.
+- Cambia formulazione: riscrivi in modo diverso (parole, struttura, esempio) mantenendo coerenza.`;
 
   const isRetry = !!opts.isRetry;
   const prev = (opts.prevAnswer || "").trim();
   const prevBlock = prev ? `\n\nRISPOSTA PRECEDENTE (da non ripetere uguale):\n${prev}` : "";
   const system = `${systemBase}\n\n${modeRules}\n\n${retryRules}${prevBlock}`;
 
-  const maxTokens = isRetry ? 360 : 260;
-  const temperature = isRetry ? 0.25 : 0.2;
+  const maxTokens = isRetry ? 520 : 320;
+  const temperature = isRetry ? 0.55 : 0.35;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -1747,7 +1776,7 @@ async function askOracle(question) {
   }
 
   const sim = questionSimilarity(question, lastUserQuestion);
-  const isRetry = sim >= 0.55;
+  const isRetry = (sim >= 0.45) || isDissatisfied(question);
   retryCount = isRetry ? Math.min(retryCount + 1, 3) : 0;
   const k = isRetry ? 5 : 3;
   const contexts = retrievePassages(question, k);
@@ -1771,6 +1800,7 @@ async function askOracle(question) {
       const firstLine = best.split(/\n+/).map(x=>x.trim()).filter(Boolean)[0] || "";
       best = firstLine ? firstLine : "Non è qualcosa che posso dire con parole.";
     }
+    best = noGroqRephrase(question, contexts, isRetry);
     lastOracleAnswer = best;
     await addMessage(best, 'oracle');
     return;
@@ -1788,6 +1818,7 @@ async function askOracle(question) {
     console.error('Errore Groq:', error);
     let best = contexts[0].text.trim();
     if (best.length > 500) best = best.slice(0, 500).trim() + "…";
+    best = noGroqRephrase(question, contexts, isRetry);
     lastOracleAnswer = best;
     await addMessage(best, 'oracle');
   }
