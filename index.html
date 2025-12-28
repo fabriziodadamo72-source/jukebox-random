@@ -22,9 +22,10 @@
       position:fixed;
       top:0;left:0;
       width:100%;height:100%;
-      opacity:0.15;
       pointer-events:none;
-      z-index:1;
+      z-index:5;              /* sopra lo sfondo */
+      opacity:0.24;
+      mix-blend-mode:screen;  /* effetto Matrix più "fuso" */
     }
 
     /* Background container */
@@ -839,7 +840,7 @@ const FOLDERS = {
    ======================= */
 // === OCHO ORACLE (RAG) ===
 // L'API key serve SOLO per chiamare un modello (opzionale). La ricerca nel tuo archivio avviene qui in JS.
-const GROQ_API_KEY = "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"; // <-- incolla qui la tua Groq API key (opzionale). Se vuota, OCHO risponde solo con l'archivio.
+const GROQ_API_KEY = ""; // <-- incolla qui la tua Groq API key (opzionale). Se vuota, OCHO risponde solo con l'archivio.
 const GROQ_MODEL = "llama-3.1-70b-versatile"; // puoi cambiare modello se vuoi
 
 // Text-to-Speech (opzionale)
@@ -925,26 +926,81 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()";
-const fontSize = 14;
-const columns = canvas.width / fontSize;
-const drops = Array(Math.floor(columns)).fill(1);
+// ===== MATRIX RAIN (EBRAICO) =====
+const hebLetters = "אבגדהוזחטיכלמנסעפצקרשתךםןףץ";
+const sacredWords = ["אור","אמת","חיים","אחד"]; // Luce, Verità, Vita, Uno
+const sacredIt = { "אור":"LUCE", "אמת":"VERITÀ", "חיים":"VITA", "אחד":"UNO" };
+
+// quanto spesso far comparire una "parola" e non una singola lettera
+const SACRED_PROBABILITY = 0.06;
+
+// overlay traduzioni (spariscono da sole)
+const translations = [];
+function pushTranslation(itText, x, y){
+  translations.push({ text: itText, x, y, life: 1.0 });
+}
+
+function pickHebrew(){
+  if (Math.random() < SACRED_PROBABILITY){
+    const w = sacredWords[Math.floor(Math.random()*sacredWords.length)];
+    return w;
+  }
+  return hebLetters[Math.floor(Math.random()*hebLetters.length)];
+}
+
+let fontSize = 14;
+let columns = Math.floor(canvas.width / fontSize);
+let drops = Array(columns).fill(1);
+
+function resetMatrix(){
+  columns = Math.floor(canvas.width / fontSize);
+  drops = Array(columns).fill(1);
+}
 
 function drawMatrix() {
   ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
+
+  // pioggia ebraica
   ctx.fillStyle = "#00ff9a";
   ctx.font = fontSize + "px monospace";
-  
+
   for (let i = 0; i < drops.length; i++) {
-    const text = chars[Math.floor(Math.random() * chars.length)];
-    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-    
-    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+    const h = pickHebrew();
+    const x = i * fontSize;
+    const y = drops[i] * fontSize;
+
+    ctx.fillText(h, x, y);
+
+    // ogni tanto, se è una parola sacra, mostra anche la traduzione italiana (leggera)
+    if (sacredIt[h] && Math.random() < 0.55) {
+      pushTranslation(sacredIt[h], x + fontSize * 0.2, y + fontSize * 1.1);
+    }
+
+    if (y > canvas.height && Math.random() > 0.975) {
       drops[i] = 0;
     }
     drops[i]++;
+  }
+
+  // disegna le traduzioni con fade-out
+  if (translations.length){
+    ctx.save();
+    ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    for (let k = translations.length - 1; k >= 0; k--){
+      const t = translations[k];
+      t.life -= 0.045;   // velocità scomparsa
+      t.y -= 0.35;       // piccolo "galleggiamento" verso l'alto
+
+      if (t.life <= 0){
+        translations.splice(k, 1);
+        continue;
+      }
+      ctx.globalAlpha = Math.max(0, t.life) * 0.9;
+      ctx.fillStyle = "#eafff6";
+      ctx.fillText(t.text, t.x, t.y);
+    }
+    ctx.restore();
   }
 }
 
@@ -953,8 +1009,8 @@ setInterval(drawMatrix, 50);
 window.addEventListener("resize", () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  resetMatrix();
 });
-
 /* =======================
    FLOATING PARTICLES
    ======================= */
@@ -1606,10 +1662,10 @@ function noGroqRephrase(q, contexts, isRetry){
 
   // Pulizia veloce
   core = core.replace(/\s+/g," ").trim();
-  if (!core) core = "work in progress.";
+  if (!core) core = "Questo non è nel mio archivio.";
 
   // Voce OCHO
-  const intro = isRetry ? "Ocho dice: " : "Io la vedo così: ";
+  const intro = isRetry ? "Ti rispondo in modo più preciso: " : "Io la vedo così: ";
   // Taglio
   if (core.length > 360) core = core.slice(0, 360).trim() + "…";
   return intro + core;
@@ -1944,5 +2000,3 @@ console.log("📊 Categorie tracciate:", Object.keys(fileSnapshots).length);
 </script>
 </body>
 </html>
-
-
